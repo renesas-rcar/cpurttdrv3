@@ -1,0 +1,252 @@
+/****************************************************************************/
+/*
+ * FILE          : cpurttdrv.h
+ * DESCRIPTION   : CPU Runtime Test driver for sample code
+ * CREATED       : 2021.04.17
+ * MODIFIED      : 2021.02.14
+ * AUTHOR        : Renesas Electronics Corporation
+ * TARGET DEVICE : R-Car V4H
+ * TARGET OS     : BareMetal
+ * HISTORY       :
+ *                 2021.10.19 Modify the definition value used in A2 Runtime Test.
+ *                            Move definition values that do not need to be shared with the user layer.
+ *                 2021.02.14 Modify for V4H.
+ */
+/****************************************************************************/
+/*
+ * Copyright(C) 2021 Renesas Electronics Corporation. All Rights Reserved.
+ * RENESAS ELECTRONICS CONFIDENTIAL AND PROPRIETARY
+ * This program must be used solely for the purpose for which
+ * it was furnished by Renesas Electronics Corporation.
+ * No part of this program may be reproduced or disclosed to
+ * others, in any form, without the prior written permission
+ * of Renesas Electronics Corporation.
+ *
+ ****************************************************************************/
+
+#ifndef CPURTTDRV_H
+#define CPURTTDRV_H
+
+#include "cpurtt_common.h"
+
+#define UDF_CPURTT_UIO_DRIVER_NAME    "fbc_uio_share"     /* cpurtt driver name for uio */
+
+#define DRV_CPURTTKER_CPUNUM_MAX 4U
+#define DRV_CPURTTKER_SMONI_BUF_SIZE 128U
+
+/* FieldBIST related defined values */
+/* RTTFINISH1 REG */
+#define DRV_RTTKER_RTTFINISH1   0xFF830100U
+#define DRV_RTTKER_RTTFINISH2   0xFF830104U
+#define DRV_RTTKER_RTTFINISH3   0xFF830108U
+
+/* RTTEX REG */
+#define DRV_RTTKER_ISP0_RTTEX   0xEAC10000U
+#define DRV_RTTKER_ISP1_RTTEX   0xEAC20000U
+#define DRV_RTTKER_IMR0_RTTEX   0xE6010000U
+#define DRV_RTTKER_IMR1_RTTEX   0xE6020000U
+#define DRV_RTTKER_IMR2_RTTEX   0xE6030000U
+#define DRV_RTTKER_IMS0_RTTEX   0xE6050000U
+#define DRV_RTTKER_IMS1_RTTEX   0xE6060000U
+#define DRV_RTTKER_IMP0_RTTEX   0xF8C00000U
+#define DRV_RTTKER_IMP1_RTTEX   0xF8C10000U
+#define DRV_RTTKER_IMP2_RTTEX   0xF8C20000U
+#define DRV_RTTKER_IMP3_RTTEX   0xF8C30000U
+#define DRV_RTTKER_OCV0_RTTEX   0xF8C40000U
+#define DRV_RTTKER_OCV1_RTTEX   0xF8C50000U
+#define DRV_RTTKER_OCV2_RTTEX   0xF8C60000U
+#define DRV_RTTKER_OCV3_RTTEX   0xF8C70000U
+#define DRV_RTTKER_DP0_RTTEX    0xFF560000U
+#define DRV_RTTKER_DP1_RTTEX    0xFF570000U
+#define DRV_RTTKER_CNN_RTTEX    0xFF500000U
+#define DRV_RTTKER_DSP0_RTTEX   0xFF640000U
+#define DRV_RTTKER_DSP1_RTTEX   0xFF650000U
+#define DRV_RTTKER_DSP2_RTTEX   0xFF660000U
+#define DRV_RTTKER_DSP3_RTTEX   0xFF670000U
+#define DRV_RTTKER_CNRAM_RTTEX  0xFF550000U
+#define DRV_RTTKER_SLIM0_RTTEX  0xF8F40000U
+#define DRV_RTTKER_SLIM1_RTTEX  0xF8F50000U
+#define DRV_RTTKER_CA76D0_RTTEX 0xF8700000U
+#define DRV_RTTKER_CA760_RTTEX  0xF8710000U
+#define DRV_RTTKER_CA761_RTTEX  0xF8720000U
+#define DRV_RTTKER_CA76D1_RTTEX 0xF8730000U
+#define DRV_RTTKER_CA762_RTTEX  0xF8740000U
+#define DRV_RTTKER_CA763_RTTEX  0xF8750000U
+#define DRV_RTTKER_UMFL0_RTTEX  0x7B610000U
+#define DRV_RTTKER_SMPS0_RTTEX  0x7B640000U
+#define DRV_RTTKER_SMPO0_RTTEX  0x7B630000U
+#define DRV_RTTKER_PAP_RTTEX    0x7B620000U
+
+#define DRV_CPURTTKER_OFFSET_RTTEX 0x000U
+
+#define DRV_RTTKER_RTTEX_BIT_EX 0x00000001U
+
+#define DRV_CPURTTKER_FBIST_FINISH_ISSUED     1U
+#define DRV_CPURTTKER_FBIST_FINISH_NOT_ISSUED 0U
+
+typedef enum
+{
+    DRV_RTTKER_RTTFINISH_GRP1,
+    DRV_RTTKER_RTTFINISH_GRP2,
+    DRV_RTTKER_RTTFINISH_GRP3,
+} drvRTT_rttfinish_t;
+
+#define DRV_RTTKER_RTTFINISH_BIT_WIDTH 32
+
+/* Bit number of RTTFINISH1 register */
+#define DRV_RTTKER_IMR0_RTTFINISH_BIT   31U
+#define DRV_RTTKER_ISP1_RTTFINISH_BIT   27U
+#define DRV_RTTKER_ISP0_RTTFINISH_BIT   26U
+#define DRV_RTTKER_CA763_RTTFINISH_BIT  14U
+#define DRV_RTTKER_CA762_RTTFINISH_BIT  13U
+#define DRV_RTTKER_CA761_RTTFINISH_BIT  12U
+#define DRV_RTTKER_CA760_RTTFINISH_BIT  11U
+#define DRV_RTTKER_CA76D1_RTTFINISH_BIT 10U
+#define DRV_RTTKER_CA76D0_RTTFINISH_BIT  9U
+/* Bit number of RTTFINISH2 register */
+#define DRV_RTTKER_OCV3_RTTFINISH_BIT   30U
+#define DRV_RTTKER_OCV2_RTTFINISH_BIT   29U
+#define DRV_RTTKER_OCV1_RTTFINISH_BIT   28U
+#define DRV_RTTKER_OCV0_RTTFINISH_BIT   27U
+#define DRV_RTTKER_DP1_RTTFINISH_BIT    26U
+#define DRV_RTTKER_DP0_RTTFINISH_BIT    25U
+#define DRV_RTTKER_IMP3_RTTFINISH_BIT   24U
+#define DRV_RTTKER_IMP2_RTTFINISH_BIT   23U
+#define DRV_RTTKER_IMP1_RTTFINISH_BIT   22U
+#define DRV_RTTKER_IMP0_RTTFINISH_BIT   21U
+#define DRV_RTTKER_SMPO0_RTTFINISH_BIT  15U
+#define DRV_RTTKER_SMPS0_RTTFINISH_BIT  11U
+#define DRV_RTTKER_UMFL0_RTTFINISH_BIT   9U
+#define DRV_RTTKER_PAP_RTTFINISH_BIT     7U
+#define DRV_RTTKER_IMS1_RTTFINISH_BIT    4U
+#define DRV_RTTKER_IMS0_RTTFINISH_BIT    3U
+#define DRV_RTTKER_IMR2_RTTFINISH_BIT    1U
+#define DRV_RTTKER_IMR1_RTTFINISH_BIT    0U
+/* Bit number of RTTFINISH3 register */
+#define DRV_RTTKER_SLIM1_RTTFINISH_BIT  22U
+#define DRV_RTTKER_SLIM0_RTTFINISH_BIT  21U
+#define DRV_RTTKER_CNRAM_RTTFINISH_BIT  20U
+#define DRV_RTTKER_DSP3_RTTFINISH_BIT   17U
+#define DRV_RTTKER_DSP2_RTTFINISH_BIT   16U
+#define DRV_RTTKER_DSP1_RTTFINISH_BIT   15U
+#define DRV_RTTKER_DSP0_RTTFINISH_BIT   14U
+#define DRV_RTTKER_CNN_RTTFINISH_BIT     3U
+
+
+/* Type of HIERARCHY */
+#define DRV_RTTKER_HIERARCHY_CPU   0U
+#define DRV_RTTKER_HIERARCHY_OTHER 1U
+
+/* ICC_ASGI1R_EL1 : op0(3) op1(0) CRn(12) CRm(11) op2(6)*/
+#define DRV_CPURTTKER_SYSREG_ICC_ASGI1R_EL1_STR       "s3_0_c12_c11_6"
+
+#define DRV_CPURTTKER_SGI_HIERARCHY_CA760  0x0000000004000001U
+#define DRV_CPURTTKER_SGI_HIERARCHY_CA761  0x0000000004010001U
+#define DRV_CPURTTKER_SGI_HIERARCHY_CA76D0 0x0000000104000001U
+#define DRV_CPURTTKER_SGI_HIERARCHY_CA762  0x0000000104010001U
+#define DRV_CPURTTKER_SGI_HIERARCHY_CA763  0x0000000004010001U
+#define DRV_CPURTTKER_SGI_HIERARCHY_CA76D1 0x0000000104010001U
+
+#define DRV_CPURTTKER_ITARGETS_11      0xF101082CU
+#define DRV_CPURTTKER_ITARGETS_11_MASK 0x00FF0000U
+#define DRV_CPURTTKER_ITARGETS_11_CPU0 0x00010000U
+#define DRV_CPURTTKER_ITARGETS_11_CPU1 0x00020000U
+
+#define DRV_RTTKER_FIELD_BIST_INT_CPU 0x01U
+#define DRV_RTTKER_AFFINITY_MASK_BIT 0x01U
+
+/* return code */
+#define FBIST_CB_CLOSE_REQ 1
+#define FBIST_BUSCHECK_ERROR 2
+
+#define CB_QUEUE_STATUS_EMPTY   0x00
+#define CB_QUEUE_STATUS_ENA     0x01
+#define CB_QUEUE_STATUS_FULL    0x02
+
+/* Data definition value to be set in the argument of R_SMONI_API_RuntimeTestA2Execute other than CPU0 */
+#define DRV_RTTKER_A2_PARAM_SGI_DATA    0xFFFFFFFFU
+#define DRV_RTTKER_A2_PARAM_RTTEX_DATA  0x00000000U
+
+/* Definition of the kernel CPURTT device module name */
+#define UDF_CPURTT_DRIVER_NAME        "cpurttdrv"     /* cpurtt driver name */
+#define UDF_CPURTT_CLASS_NAME         "cpurttmod"     /* cpurtt driver class name */
+
+typedef enum
+{
+    DRV_RTTKER_HIERARCHY_ISP0,  /* Video IO Hierarchy (ISP0) */
+    DRV_RTTKER_HIERARCHY_ISP1,  /* Video IO Hierarchy (ISP1) */
+    DRV_RTTKER_HIERARCHY_IMR0,  /* Video Codec Hierarchy (IMR2(IMR0)) */
+    DRV_RTTKER_HIERARCHY_IMR1,  /* Video Codec Hierarchy (IMR3(IMR1)) */
+    DRV_RTTKER_HIERARCHY_IMR2,  /* Video Codec Hierarchy (IMR4(IMR2)) */
+    DRV_RTTKER_HIERARCHY_IMS0,  /* Video Codec Hierarchy (IMR0(IMS0)) */
+    DRV_RTTKER_HIERARCHY_IMS1,  /* Video Codec Hierarchy (IMR1(IMS1)) */
+    DRV_RTTKER_HIERARCHY_IMP0,  /* Image Recognition Hierarchy (IMP core0) */
+    DRV_RTTKER_HIERARCHY_IMP1,  /* Image Recognition Hierarchy (IMP core1) */
+    DRV_RTTKER_HIERARCHY_IMP2,  /* Image Recognition Hierarchy (IMP core2) */
+    DRV_RTTKER_HIERARCHY_IMP3,  /* Image Recognition Hierarchy (IMP core3) */
+    DRV_RTTKER_HIERARCHY_OCV0,  /* Image Recognition Hierarchy (OCV core0) */
+    DRV_RTTKER_HIERARCHY_OCV1,  /* Image Recognition Hierarchy (OCV core1) */
+    DRV_RTTKER_HIERARCHY_OCV2,  /* Image Recognition Hierarchy (OCV core2) */
+    DRV_RTTKER_HIERARCHY_OCV3,  /* Image Recognition Hierarchy (OCV core3) */
+    DRV_RTTKER_HIERARCHY_DP0,   /* Image Recognition Hierarchy (IMP DMAC0, IMP PSC0) */
+    DRV_RTTKER_HIERARCHY_DP1,   /* Image Recognition Hierarchy (IMP DMAC1, IMP DMAC2) */
+    DRV_RTTKER_HIERARCHY_CNN,   /* Image Recognition Hierarchy (IMP CNN) */
+    DRV_RTTKER_HIERARCHY_DSP0,  /* Image Recognition Hierarchy (DSP0) */
+    DRV_RTTKER_HIERARCHY_DSP1,  /* Image Recognition Hierarchy (DSP1) */
+    DRV_RTTKER_HIERARCHY_DSP2,  /* Image Recognition Hierarchy (DSP2) */
+    DRV_RTTKER_HIERARCHY_DSP3,  /* Image Recognition Hierarchy (DSP3) */
+    DRV_RTTKER_HIERARCHY_CNRAM, /* Image Recognition Hierarchy (CNRAM) */
+    DRV_RTTKER_HIERARCHY_SLIM0, /* Image Recognition Hierarchy (slimDMAC0) */
+    DRV_RTTKER_HIERARCHY_SLIM1, /* Image Recognition Hierarchy (slimDMAC1) */
+    DRV_RTTKER_HIERARCHY_CA76D0,  /* Cortex-A76 CPU Cluster 0 Hierarchy (A2 domain) */
+    DRV_RTTKER_HIERARCHY_CA760,   /* Cortex-A76 CPU Core 0 Hierarchy (A1 domain) */
+    DRV_RTTKER_HIERARCHY_CA761,   /* Cortex-A76 CPU Core 1 Hierarchy (A1 domain) */
+    DRV_RTTKER_HIERARCHY_CA76D1,  /* Cortex-A76 CPU Cluster 1 Hierarchy (A2 domain) */
+    DRV_RTTKER_HIERARCHY_CA762,   /* Cortex-A76 CPU Core 2 Hierarchy (A1 domain) */
+    DRV_RTTKER_HIERARCHY_CA763,   /* Cortex-A76 CPU Core 3 Hierarchy (A1 domain) */
+    DRV_RTTKER_HIERARCHY_UMFL0, /* Vision IP Hierarchy (Optical Flow 0) */
+    DRV_RTTKER_HIERARCHY_SMPS0, /* Vision IP Hierarchy (SMPS0) */
+    DRV_RTTKER_HIERARCHY_SMPO0, /* Vision IP Hierarchy (SMPO0) */
+    DRV_RTTKER_HIERARCHY_PAP,   /* Vision IP Hierarchy (PAP) */
+    DRV_RTTKER_HIERARCHY_MAX
+} drvRTT_hierarchy_t;
+
+typedef struct
+{
+    uint32_t mHierarchyType;
+    drvRTT_hierarchy_t mHierarchy;
+    uint32_t mRttfinishBit;
+    uint32_t mRttexAdr;
+    drvRTT_rttfinish_t mRttfinishGrp;
+} drvCPURTT_FbistHdr_t;
+
+typedef struct
+{
+    uint8_t head;
+    uint8_t pos;
+    uint8_t status;
+    drvCPURTT_CallbackInfo_t CbInfo[DRV_RTTKER_HIERARCHY_MAX];
+}drvCPURTT_CbInfoQueue_t;
+
+typedef int (*A2ThreadTable)(void*);
+
+struct fbc_uio_share_soc_res {
+	char **clk_names;
+};
+
+/* */
+struct fbc_uio_share_platform_data {
+	struct platform_device *pdev;
+	struct uio_info *uio_info;
+	void __iomem *base_addr[1];
+	struct clk *clks[3];
+	int clk_count;
+    spinlock_t lock;
+    unsigned long flags;
+};
+
+enum {
+    UIO_IRQ_DISABLED = 0,
+};
+
+#endif
