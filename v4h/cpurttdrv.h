@@ -11,6 +11,7 @@
  *                 2021.10.19 Modify the definition value used in A2 Runtime Test.
  *                            Move definition values that do not need to be shared with the user layer.
  *                 2021.02.14 Modify for V4H.
+ *                 2022.03.04 Remove ITARGETS11 defines.
  */
 /****************************************************************************/
 /*
@@ -146,11 +147,6 @@ typedef enum
 #define DRV_CPURTTKER_SGI_HIERARCHY_CA762  0x0000000104010001U
 #define DRV_CPURTTKER_SGI_HIERARCHY_CA763  0x0000000004010001U
 #define DRV_CPURTTKER_SGI_HIERARCHY_CA76D1 0x0000000104010001U
-
-#define DRV_CPURTTKER_ITARGETS_11      0xF101082CU
-#define DRV_CPURTTKER_ITARGETS_11_MASK 0x00FF0000U
-#define DRV_CPURTTKER_ITARGETS_11_CPU0 0x00010000U
-#define DRV_CPURTTKER_ITARGETS_11_CPU1 0x00020000U
 
 #define DRV_RTTKER_FIELD_BIST_INT_CPU 0x01U
 #define DRV_RTTKER_AFFINITY_MASK_BIT 0x01U

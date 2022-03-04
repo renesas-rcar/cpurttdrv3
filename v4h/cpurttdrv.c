@@ -15,6 +15,7 @@
  *                 2021.11.22 Update software version.
  *                 2022.01.24 Add ioctl command for HWA Runtime Test.
  *                 2022.02.14 Modify for V4H.
+ *                 2022.03.04 Modify RTTEX address. Remove ITARGETS11 check.
  */
 /****************************************************************************/
 /*
@@ -98,7 +99,6 @@ static drvCPURTT_A2rttParam_t g_A2Param[DRV_CPURTTKER_CPUNUM_MAX];
 static struct task_struct *g_A2Task[DRV_CPURTTKER_CPUNUM_MAX];
 static uint32_t g_TaskExitFlg = 0;
 
-static void __iomem *g_RegBaseItargets11 = NULL;
 static void __iomem *g_RegBaseRttfinish1 = NULL;
 static void __iomem *g_RegBaseRttfinish2 = NULL;
 static void __iomem *g_RegBaseRttfinish3 = NULL;
@@ -603,24 +603,6 @@ static long drvCPURTT_InitRegAddr(void)
     int i;
     struct resource *Resource;
 
-    if (NULL == g_RegBaseItargets11)
-    {
-        Resource = request_mem_region(DRV_CPURTTKER_ITARGETS_11, 4U, UDF_CPURTT_DRIVER_NAME);
-        if (NULL == Resource)
-        {
-            pr_err("failed to get GICD_ITARGETS11 resource\n");
-            return -ENOSPC;
-        }
-
-        g_RegBaseItargets11 = ioremap(DRV_CPURTTKER_ITARGETS_11, 4U);
-
-        if(NULL == g_RegBaseItargets11)
-        {
-            pr_err("failed to get GICD_ITARGETS11 address \n");
-            return -EFAULT;
-        }
-    }
-
     if (NULL == g_RegBaseRttfinish1)
     {
         Resource = request_mem_region(DRV_RTTKER_RTTFINISH1, 4U, UDF_CPURTT_DRIVER_NAME);
@@ -700,10 +682,6 @@ static void drvCPURTT_DeInitRegAddr(void)
     uint32_t i;
 
     /* rerealse io address */
-    iounmap(g_RegBaseItargets11);
-    release_mem_region(DRV_CPURTTKER_ITARGETS_11, 4U);
-    g_RegBaseItargets11 = NULL;
-
     iounmap(g_RegBaseRttfinish1);
     release_mem_region(DRV_RTTKER_RTTFINISH1, 4U);
     g_RegBaseRttfinish1 = NULL;
@@ -731,8 +709,6 @@ static long drvCPURTT_EnableFbistInterrupt(struct fbc_uio_share_platform_data *p
     cpumask_t CpuMask;
     struct uio_info *uio_info = priv->uio_info;
     unsigned long flags;
-    volatile unsigned int reg_read_data;
-    unsigned int reg_excepted_data;
 
     spin_lock_irqsave(&priv->lock, flags);
     if (__test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
@@ -748,15 +724,6 @@ static long drvCPURTT_EnableFbistInterrupt(struct fbc_uio_share_platform_data *p
     {
         pr_err("cannot set irq affinity %d\n", (unsigned int)uio_info->irq);
         return -EINVAL;
-    }
-
-    /* internal bus interface check */
-    reg_excepted_data = ((unsigned int)((1U<<aAffinity)<<16U) & DRV_CPURTTKER_ITARGETS_11_MASK);
-    reg_read_data = readl(g_RegBaseItargets11);
-    if (reg_excepted_data != (reg_read_data & DRV_CPURTTKER_ITARGETS_11_MASK))
-    {
-        pr_err("gicd_targets11 buscheck error read_data = %08x excepted_dat = %08x\n", reg_read_data, reg_excepted_data);
-        return FBIST_BUSCHECK_ERROR;
     }
 
     return ret;
@@ -1042,8 +1009,6 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
     struct platform_device *pdev = g_cpurtt_pdev;
     struct fbc_uio_share_platform_data *priv = platform_get_drvdata(pdev);
     unsigned int IrqNum = (unsigned int)priv->uio_info->irq;
-    unsigned int reg_read_data;
-    unsigned int reg_excepted_data;
 
     if (!(0xFFFFFFF0 & aCpuId))
     {
@@ -1107,12 +1072,10 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
             {
                 if (aCpuId == 0)
                 {
-                    reg_excepted_data = DRV_CPURTTKER_ITARGETS_11_CPU1;
                     ret = (long)irq_set_affinity_hint(IrqNum, cpumask_of(1U));
                 }
                 else
                 {
-                    reg_excepted_data = DRV_CPURTTKER_ITARGETS_11_CPU0;
                     ret = (long)irq_set_affinity_hint(IrqNum, cpumask_of(0U));
                 }
                 if (ret != 0)
@@ -1120,15 +1083,6 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
                     pr_err( "irq_set_affinity_hint failed %ld \n",ret);
                     break;
                 }
-
-                 /* internal bus interface check */
-                 reg_read_data = readl(g_RegBaseItargets11);
-                 if (reg_excepted_data != (reg_read_data & DRV_CPURTTKER_ITARGETS_11_MASK))
-                 {
-                     pr_err("gicd_targets11 buscheck error read_data = %08x excepted_data = %08x\n", reg_read_data, reg_excepted_data);
-                     ret = FBIST_BUSCHECK_ERROR;
-                     break;
-                 }
 
                 InterruptFlag = arch_local_irq_save();
                 *aSmoniret = R_SMONI_API_RuntimeTestA1Execute(SmoniArgA1.Rttex);
@@ -1152,16 +1106,6 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
                         pr_err( "irq_set_affinity_hint failed %ld \n", ret);
                         break;
                     }
-
-                     /* internal bus interface check */
-                     reg_excepted_data = DRV_CPURTTKER_ITARGETS_11_CPU0;
-                     reg_read_data = readl(g_RegBaseItargets11);
-                     if (reg_excepted_data != (reg_read_data & DRV_CPURTTKER_ITARGETS_11_MASK))
-                     {
-                         pr_err("gicd_targets11 buscheck error read_data = %08x excepted_data = %08x\n", reg_read_data, reg_excepted_data);
-                         ret = FBIST_BUSCHECK_ERROR;
-                         break;
-                     }
 
                     /* A2 Runtime Test Execution thread start request  */
                     complete(&g_A2StartSynCompletion);
