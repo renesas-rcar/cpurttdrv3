@@ -3,7 +3,7 @@
  * FILE          : cpurtt_common.h
  * DESCRIPTION   : CPU Runtime Test driver
  * CREATED       : 2021.02.15
- * MODIFIED      : 2022.02.14
+ * MODIFIED      : 2022.04.08
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -14,7 +14,8 @@
  *                 2021.10.19 Delete unused definition value.
  *                            Move definition values that do not need to be shared with the user layer.
  *                 2022.01.24 Added definition value for HWA Runtime Test.
- *                 2021.02.14 Modify for V4H.
+ *                 2022.02.14 Modify for V4H.
+ *                 2022.04.08 Modify drvCPURTT_CallbackInfo_t.
  */
 /****************************************************************************/
 /*
@@ -97,9 +98,8 @@ typedef enum
 } drvCPURTT_SmoniTable_t;
 
 typedef struct {
-    uint32_t FbistCbRequest;
-    uint32_t BusCheckCbRequest;
-    uint32_t RfsoOutputPinRequest;
+    uint64_t FbistCbRequest;
+    uint64_t RfsoOutputPinRequest;
 } drvCPURTT_CallbackInfo_t;
 
 typedef struct {
@@ -123,8 +123,8 @@ typedef struct {
 #define UDF_CPURTT_MODULE_NAME        "cpurttmod0"    /* cpurtt driver minor number */
 
 /* Definition for callback control information */
-#define DRV_CPURTT_CB_REQ_NON           (0x00000000U)
-#define DRV_CPURTT_CB_REQ_CALLBACK      (0x00000001U)
+#define DRV_CPURTT_CB_REQ_NON           (0x0000000000000000U)
+#define DRV_CPURTT_CB_REQ_CALLBACK      (0x0000000000000001U)
 
 #ifdef __cplusplus
 }

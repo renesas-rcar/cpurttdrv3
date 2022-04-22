@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.h
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.17
- * MODIFIED      : 2021.02.14
+ * MODIFIED      : 2022.04.08
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -12,6 +12,8 @@
  *                            Move definition values that do not need to be shared with the user layer.
  *                 2021.02.14 Modify for V4H.
  *                 2022.03.04 Remove ITARGETS11 defines.
+ *                 2022.04.08 Add enum type rerated to modifing irq affinity setting.
+ *                            Modify the setting of SGI issue register.
  */
 /****************************************************************************/
 /*
@@ -32,7 +34,6 @@
 
 #define UDF_CPURTT_UIO_DRIVER_NAME    "fbc_uio_share"     /* cpurtt driver name for uio */
 
-#define DRV_CPURTTKER_CPUNUM_MAX 4U
 #define DRV_CPURTTKER_SMONI_BUF_SIZE 128U
 
 /* FieldBIST related defined values */
@@ -138,14 +139,14 @@ typedef enum
 #define DRV_RTTKER_HIERARCHY_CPU   0U
 #define DRV_RTTKER_HIERARCHY_OTHER 1U
 
-/* ICC_ASGI1R_EL1 : op0(3) op1(0) CRn(12) CRm(11) op2(6)*/
-#define DRV_CPURTTKER_SYSREG_ICC_ASGI1R_EL1_STR       "s3_0_c12_c11_6"
+/* ICC_SGI1R_EL1 : op0(3) op1(0) CRn(12) CRm(11) op2(5)*/
+#define DRV_CPURTTKER_SYSREG_ICC_SGI1R_EL1_STR       "s3_0_c12_c11_5"
 
 #define DRV_CPURTTKER_SGI_HIERARCHY_CA760  0x0000000004000001U
 #define DRV_CPURTTKER_SGI_HIERARCHY_CA761  0x0000000004010001U
-#define DRV_CPURTTKER_SGI_HIERARCHY_CA76D0 0x0000000104000001U
-#define DRV_CPURTTKER_SGI_HIERARCHY_CA762  0x0000000104010001U
-#define DRV_CPURTTKER_SGI_HIERARCHY_CA763  0x0000000004010001U
+#define DRV_CPURTTKER_SGI_HIERARCHY_CA76D0 0x0000000004010001U
+#define DRV_CPURTTKER_SGI_HIERARCHY_CA762  0x0000000104000001U
+#define DRV_CPURTTKER_SGI_HIERARCHY_CA763  0x0000000104010001U
 #define DRV_CPURTTKER_SGI_HIERARCHY_CA76D1 0x0000000104010001U
 
 #define DRV_RTTKER_FIELD_BIST_INT_CPU 0x01U
@@ -153,7 +154,6 @@ typedef enum
 
 /* return code */
 #define FBIST_CB_CLOSE_REQ 1
-#define FBIST_BUSCHECK_ERROR 2
 
 #define CB_QUEUE_STATUS_EMPTY   0x00
 #define CB_QUEUE_STATUS_ENA     0x01
@@ -207,6 +207,36 @@ typedef enum
     DRV_RTTKER_HIERARCHY_MAX
 } drvRTT_hierarchy_t;
 
+typedef enum
+{
+    DRV_CPURTTKER_CPUNUM_CPU0 = 0,
+    DRV_CPURTTKER_CPUNUM_CPU1,
+    DRV_CPURTTKER_CPUNUM_CPU2,
+    DRV_CPURTTKER_CPUNUM_CPU3,
+    DRV_CPURTTKER_CPUNUM_MAX
+} drvRTT_cpunum_t;
+
+typedef enum
+{
+    DRV_CPURTTKER_CLUSTERNUM_0 = 0,
+    DRV_CPURTTKER_CLUSTERNUM_1,
+    DRV_CPURTTKER_CLUSTERNUM_MAX
+} drvRTT_clusternum_t;
+
+typedef enum
+{
+    DRV_CPURTTKER_CLUSTERNUM_CPU0 = 0,
+    DRV_CPURTTKER_CLUSTERNUM_CPU1,
+    DRV_CPURTTKER_CLUSTERNUM_CPUMAX
+} drvRTT_clustercpunum_t;
+
+typedef enum
+{
+    DRV_CPURTTKER_TESTTYPE_A1 = 0,
+    DRV_CPURTTKER_TESTTYPE_A2,
+    DRV_CPURTTKER_TESTTYPE_MAX
+} drvRTT_testtype_t;
+
 typedef struct
 {
     uint32_t mHierarchyType;
@@ -223,6 +253,12 @@ typedef struct
     uint8_t status;
     drvCPURTT_CallbackInfo_t CbInfo[DRV_RTTKER_HIERARCHY_MAX];
 }drvCPURTT_CbInfoQueue_t;
+
+typedef struct
+{
+    uint16_t mClusterNum;
+    uint16_t mCpuNum;
+} drvCPURTT_A2ThreadArg_t;
 
 typedef int (*A2ThreadTable)(void*);
 
