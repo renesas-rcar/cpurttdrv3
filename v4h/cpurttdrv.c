@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.20
- * MODIFIED      : 2022.04.08
+ * MODIFIED      : 2022.05.13
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -20,6 +20,7 @@
  *                            Remove RTTEX data check at FbistInterruptHandler and HWA Execute.
  *                            Modify the execution method of A2 Runtime Test.
  *                            Modify the setting of SGI issue register.
+ *                 2022.05.13 Modify fbist interrupt proccess to support SMPS0, SMPO0 and PAP.
  */
 /****************************************************************************/
 /*
@@ -68,7 +69,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.2.0"
+#define DRIVER_VERSION "0.3.0"
 
 /***********************************************************
  Macro definitions
@@ -310,8 +311,8 @@ static void FbistInterruptHandler(int irq, struct uio_info *uio_info)
     uint32_t HierarchyBit;
     uint32_t Address;
     uint32_t Smoniret;
-    uint32_t FbistCbRes = 0;
-    uint32_t RfsoOutputRes = 0;
+    uint64_t FbistCbRes = 0;
+    uint64_t RfsoOutputRes = 0;
     uint32_t ReadRegVal;
     int ret;
     uint32_t FbistFinish;
