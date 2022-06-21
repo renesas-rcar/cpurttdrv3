@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.20
- * MODIFIED      : 2022.05.13
+ * MODIFIED      : 2022.06.13
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -21,6 +21,7 @@
  *                            Modify the execution method of A2 Runtime Test.
  *                            Modify the setting of SGI issue register.
  *                 2022.05.13 Modify fbist interrupt proccess to support SMPS0, SMPO0 and PAP.
+ *                 2022.06.13 Modify the wakeup method when CPU runtime test.
  */
 /****************************************************************************/
 /*
@@ -69,7 +70,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.3.0"
+#define DRIVER_VERSION "0.4.0"
 
 /***********************************************************
  Macro definitions
@@ -107,6 +108,13 @@ static unsigned int g_TaskExitFlg = 0;
 static void __iomem *g_RegBaseRttfinish1 = NULL;
 static void __iomem *g_RegBaseRttfinish2 = NULL;
 static void __iomem *g_RegBaseRttfinish3 = NULL;
+static void __iomem *g_RegBasePwrctrlc[DRV_CPURTTKER_CPUNUM_MAX] = {
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
 static void __iomem *g_RegBaseAddrTable[DRV_RTTKER_HIERARCHY_MAX] = {
     NULL, /* Video IO Hierarchy (ISP0) */
     NULL, /* Video IO Hierarchy (ISP1) */
@@ -183,13 +191,13 @@ static const phys_addr_t drvRTT_PhyRegAddr[DRV_RTTKER_HIERARCHY_MAX] = {
     DRV_RTTKER_PAP_RTTEX,
 };
 
-static const uint64_t drvCPURTTKER_SgirData[6U] = {
-    DRV_CPURTTKER_SGI_HIERARCHY_CA76D0,
-    DRV_CPURTTKER_SGI_HIERARCHY_CA760,
-    DRV_CPURTTKER_SGI_HIERARCHY_CA761,
-    DRV_CPURTTKER_SGI_HIERARCHY_CA76D1,
-    DRV_CPURTTKER_SGI_HIERARCHY_CA762,
-    DRV_CPURTTKER_SGI_HIERARCHY_CA763
+static const uint64_t drvCPURTTKER_WakeupReg[DRV_CPURTTKER_CPUNUM_MAX + DRV_CPURTTKER_CLUSTERNUM_MAX] = {
+    DRV_CPURTTKER_CPUNUM_CPU1,
+    DRV_CPURTTKER_CPUNUM_CPU0,
+    DRV_CPURTTKER_CPUNUM_CPU1,
+    DRV_CPURTTKER_CPUNUM_CPU3,
+    DRV_CPURTTKER_CPUNUM_CPU2,
+    DRV_CPURTTKER_CPUNUM_CPU3
 };
 
 static const uint32_t drvCPURTTKER_InterruptCpuA1[DRV_CPURTTKER_CPUNUM_MAX] = {
@@ -297,13 +305,6 @@ static int drvCPURTT_FbistHierarchyCheckFbistFinish(const drvCPURTT_FbistHdr_t *
     return ret;
 }
 
-static void drvCPURTT_IssueSGI(uint64_t regVal)
-{
-    asm volatile("msr " DRV_CPURTTKER_SYSREG_ICC_SGI1R_EL1_STR ", %0" : : "r"(regVal));
-    asm volatile("isb sy" );
-    asm volatile("dsb sy" );
-}
-
 static void FbistInterruptHandler(int irq, struct uio_info *uio_info)
 {
     drvRTT_hierarchy_t i;
@@ -316,6 +317,8 @@ static void FbistInterruptHandler(int irq, struct uio_info *uio_info)
     uint32_t ReadRegVal;
     int ret;
     uint32_t FbistFinish;
+    uint32_t ReadData;
+    uint32_t CpuIndex;
 
     static const drvCPURTT_FbistHdr_t FbisthdrInfo[DRV_RTTKER_HIERARCHY_MAX] = {
         {DRV_RTTKER_HIERARCHY_OTHER,	DRV_RTTKER_HIERARCHY_ISP0,	DRV_RTTKER_ISP0_RTTFINISH_BIT,	DRV_RTTKER_ISP0_RTTEX,	DRV_RTTKER_RTTFINISH_GRP1},
@@ -379,10 +382,13 @@ static void FbistInterruptHandler(int irq, struct uio_info *uio_info)
                     Smoniret = R_SMONI_API_RuntimeTestFbaWrite(&Address, (uint32_t *)&WriteRegVal, 1U);
                     if (SMONI_FUSA_OK == Smoniret)
                     {
-                       /* Set the execution request information of the callback function to the user layer */
+                        /* Set the execution request information of the callback function to the user layer */
                         FbistCbRes |= (uint64_t)1U << FbisthdrInfo[i].mHierarchy;
-                       /* RuntimeTest Requests sgi wakeup from the target CPU */
-                        drvCPURTT_IssueSGI(drvCPURTTKER_SgirData[FbisthdrInfo[i].mHierarchy - DRV_RTTKER_HIERARCHY_CA76D0]);
+                        /* The process write WUP_REQ bit of PWRCTRLx register to 1 in order to wake up the core in A1 Runtime Test. */
+                        CpuIndex = drvCPURTTKER_WakeupReg[FbisthdrInfo[i].mHierarchy - DRV_RTTKER_HIERARCHY_CA76D0];
+                        ReadData = readl(g_RegBasePwrctrlc[CpuIndex]);
+                        writel((ReadData | DRV_CPURTTKER_PWRCTRLC_WUP_BIT), g_RegBasePwrctrlc[CpuIndex]);
+                        asm volatile("dsb sy" );
                     }
                     else
                     {
@@ -601,7 +607,10 @@ static struct platform_driver fbc_uio_share_driver = {
 static long drvCPURTT_InitRegAddr(void)
 {
     int i;
+    int j;
     struct resource *Resource;
+    unsigned long PwrctrlcBaseAddress;
+    int CpuIndex;
 
     if (NULL == g_RegBaseRttfinish1)
     {
@@ -674,12 +683,40 @@ static long drvCPURTT_InitRegAddr(void)
         }
     }
 
+    for (i = 0; i < (uint32_t) DRV_CPURTTKER_CLUSTERNUM_MAX; i++)
+    {
+        for (j = 0; j < (uint32_t) DRV_CPURTTKER_CLUSTERNUM_CPUMAX; j++)
+        {
+            CpuIndex = (i * DRV_CPURTTKER_CLUSTERNUM_CPUMAX) + j;
+            if (NULL == g_RegBasePwrctrlc[CpuIndex])
+            {
+                PwrctrlcBaseAddress = DRV_CPURTTKER_APMU_CORE_BASE + (i * DRV_CPURTTKER_CLUSTER_OFFSET) + (j * DRV_CPURTTKER_CLUSTER_CORE_OFFSET);
+                Resource = request_mem_region(PwrctrlcBaseAddress, 4U, UDF_CPURTT_DRIVER_NAME);
+                if (NULL == Resource)
+                {
+                    pr_err("failed to get Pwrctrlc[%d] resource\n", CpuIndex);
+                    return -ENOSPC;
+                }
+
+                g_RegBasePwrctrlc[CpuIndex] = ioremap(PwrctrlcBaseAddress, 4U);
+                if(NULL == g_RegBasePwrctrlc[CpuIndex])
+                {
+                    pr_err("failed to get PwrctrlcBaseAddress[%d] address \n", CpuIndex);
+                    return -EFAULT;
+                }
+            }
+        }
+    }
+
     return 0;
 }
 
 static void drvCPURTT_DeInitRegAddr(void)
 {
-    uint32_t i;
+    int i;
+    int j;
+    unsigned long PwrctrlcBaseAddress;
+    int CpuIndex;
 
     /* rerealse io address */
     iounmap(g_RegBaseRttfinish1);
@@ -699,6 +736,19 @@ static void drvCPURTT_DeInitRegAddr(void)
         iounmap(g_RegBaseAddrTable[i]);
         release_mem_region(drvRTT_PhyRegAddr[i], 4U);
         g_RegBaseAddrTable[i] = NULL;
+    }
+
+    for (i = 0; i < (uint32_t) DRV_CPURTTKER_CLUSTERNUM_MAX; i++)
+    {
+        for (j = 0; j < (uint32_t) DRV_CPURTTKER_CLUSTERNUM_CPUMAX; j++)
+        {
+            CpuIndex = (i * DRV_CPURTTKER_CLUSTERNUM_CPUMAX) + j;
+            PwrctrlcBaseAddress = DRV_CPURTTKER_APMU_CORE_BASE + (i * DRV_CPURTTKER_CLUSTER_OFFSET) + (j * DRV_CPURTTKER_CLUSTER_CORE_OFFSET);
+
+            iounmap(g_RegBasePwrctrlc[CpuIndex]);
+            release_mem_region(PwrctrlcBaseAddress, 4U);
+            g_RegBasePwrctrlc[CpuIndex] = NULL;
+        }
     }
 }
 

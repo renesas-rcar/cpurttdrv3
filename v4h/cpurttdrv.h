@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.h
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.17
- * MODIFIED      : 2022.04.08
+ * MODIFIED      : 2022.06.13
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -14,10 +14,11 @@
  *                 2022.03.04 Remove ITARGETS11 defines.
  *                 2022.04.08 Add enum type rerated to modifing irq affinity setting.
  *                            Modify the setting of SGI issue register.
+ *                 2022.06.13 Modify the wakeup method when CPU runtime test.
  */
 /****************************************************************************/
 /*
- * Copyright(C) 2021 Renesas Electronics Corporation. All Rights Reserved.
+ * Copyright(C) 2021-2022 Renesas Electronics Corporation. All Rights Reserved.
  * RENESAS ELECTRONICS CONFIDENTIAL AND PROPRIETARY
  * This program must be used solely for the purpose for which
  * it was furnished by Renesas Electronics Corporation.
@@ -139,15 +140,10 @@ typedef enum
 #define DRV_RTTKER_HIERARCHY_CPU   0U
 #define DRV_RTTKER_HIERARCHY_OTHER 1U
 
-/* ICC_SGI1R_EL1 : op0(3) op1(0) CRn(12) CRm(11) op2(5)*/
-#define DRV_CPURTTKER_SYSREG_ICC_SGI1R_EL1_STR       "s3_0_c12_c11_5"
-
-#define DRV_CPURTTKER_SGI_HIERARCHY_CA760  0x0000000004000001U
-#define DRV_CPURTTKER_SGI_HIERARCHY_CA761  0x0000000004010001U
-#define DRV_CPURTTKER_SGI_HIERARCHY_CA76D0 0x0000000004010001U
-#define DRV_CPURTTKER_SGI_HIERARCHY_CA762  0x0000000104000001U
-#define DRV_CPURTTKER_SGI_HIERARCHY_CA763  0x0000000104010001U
-#define DRV_CPURTTKER_SGI_HIERARCHY_CA76D1 0x0000000104010001U
+#define DRV_CPURTTKER_APMU_CORE_BASE      0xE6170800U
+#define DRV_CPURTTKER_CLUSTER_OFFSET           0x200U
+#define DRV_CPURTTKER_CLUSTER_CORE_OFFSET      0x040U
+#define DRV_CPURTTKER_PWRCTRLC_WUP_BIT    0x00000001U
 
 #define DRV_RTTKER_FIELD_BIST_INT_CPU 0x01U
 #define DRV_RTTKER_AFFINITY_MASK_BIT 0x01U
