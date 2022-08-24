@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.h
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.17
- * MODIFIED      : 2022.06.13
+ * MODIFIED      : 2022.08.23
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -15,6 +15,7 @@
  *                 2022.04.08 Add enum type rerated to modifing irq affinity setting.
  *                            Modify the setting of SGI issue register.
  *                 2022.06.13 Modify the wakeup method when CPU runtime test.
+ *                 2023.08.23 Support A2 runtime test.
  */
 /****************************************************************************/
 /*
@@ -156,7 +157,6 @@ typedef enum
 #define CB_QUEUE_STATUS_FULL    0x02
 
 /* Data definition value to be set in the argument of R_SMONI_API_RuntimeTestA2Execute other than CPU0 */
-#define DRV_RTTKER_A2_PARAM_SGI_DATA    0xFFFFFFFFU
 #define DRV_RTTKER_A2_PARAM_RTTEX_DATA  0x00000000U
 
 /* Definition of the kernel CPURTT device module name */
@@ -211,6 +211,8 @@ typedef enum
     DRV_CPURTTKER_CPUNUM_CPU3,
     DRV_CPURTTKER_CPUNUM_MAX
 } drvRTT_cpunum_t;
+
+#define DRV_CPURTTKER_CPUNUM_INVALID  DRV_CPURTTKER_CPUNUM_MAX
 
 typedef enum
 {

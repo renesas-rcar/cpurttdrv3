@@ -1,9 +1,9 @@
 /*******************************************************************************
- * Copyright (c) 2018-2021 Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2018-2022 Renesas Electronics Corporation. All rights reserved.
  *
  * DESCRIPTION   : The source code of Secure Monitor.
  * CREATED       : 2018.06.13
- * MODIFIED      : 2021.07.15
+ * MODIFIED      : 2022.08.10
  * TARGET OS     : OS agnostic.
  ******************************************************************************/
 
@@ -14,10 +14,6 @@
 /* Traceability ID: V3H_SM_CD_SMONIAPI_S01_DEF002 */
 #define SMONI_SMC_ID_SET_TIMEOUT_ASM    0xC2000009
 /* Covers: V3H_SM_DD_SMONI_DEF05_DEF018 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_S01_DEF003 */
-#define SMONI_SMC_ID_CFG_REG_CHK_ASM    0xC2000004
-/* Covers: V3H_SM_DD_SMONI_DEF05_DEF017 */
 
 /* Traceability ID: V3H_SM_CD_SMONIAPI_S01_DEF004 */
 #define SMONI_SMC_ID_RTT_LOCK_ACQ_ASM   0xC2000005
@@ -48,7 +44,6 @@
 /* Covers: V3H_SM_DD_SMONI_DEF05_DEF019 */
 
 .global R_SMONI_API_SetTimeout
-.global R_SMONI_API_ConfigurationRegisterCheck
 .global R_SMONI_API_RuntimeTestLockAcquire
 .global R_SMONI_API_RuntimeTestLockRelease
 .global R_SMONI_API_RuntimeTestA1Execute
@@ -68,18 +63,6 @@ R_SMONI_API_SetTimeout:
   smc #0
   ret
   /* Covers: V3H_SM_DD_SMONIAPI_EX008_001 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_S01_FUNC002 */
-.type R_SMONI_API_ConfigurationRegisterCheck, @function
-R_SMONI_API_ConfigurationRegisterCheck:
-  /* Covers: V3H_SM_DD_SMONIAPI_EX007 */
-  /* Traceability ID: V3H_SM_CD_SMONIAPI_S01_FUNC002_001 */
-  mov w2, w1
-  mov w1, w0
-  ldr w0, =SMONI_SMC_ID_CFG_REG_CHK_ASM
-  smc #0
-  ret
-  /* Covers: V3H_SM_DD_SMONIAPI_EX007_001 */
 
 /* Traceability ID: V3H_SM_CD_SMONIAPI_S01_FUNC003 */
 .type R_SMONI_API_RuntimeTestLockAcquire, @function
@@ -117,7 +100,6 @@ R_SMONI_API_RuntimeTestA1Execute:
 R_SMONI_API_RuntimeTestA2Execute:
   /* Covers: V3H_SM_DD_SMONIAPI_EX002 */
   /* Traceability ID: V3H_SM_CD_SMONIAPI_S01_FUNC006_001 */
-  mov w2, w1
   mov w1, w0
   ldr w0, =SMONI_SMC_ID_RTT_A2_EXEC_ASM
   smc #0
@@ -347,4 +329,3 @@ R_SMONI_API_SelfCheckExecute:
   smc #0
   /* Covers: V3H_SM_DD_SMONIAPI_EX009_001 */
   ret
-

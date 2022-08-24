@@ -1,9 +1,9 @@
 /*******************************************************************************
- * Copyright (c) 2018-2020 Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2018-2022 Renesas Electronics Corporation. All rights reserved.
  *
  * DESCRIPTION   : The source code of Secure Monitor.
  * CREATED       : 2018.06.13
- * MODIFIED      : 2018.10.02
+ * MODIFIED      : 2022.08.10
  * TARGET OS     : OS agnostic.
  ******************************************************************************/
 
@@ -19,14 +19,6 @@ extern "C"
 /* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF001 */
 #define SMONI_FUSA_OK              (0x00000000U)   /* Completed without faults/errors.     */
 /* Covers:  V3H_SM_DD_SMONI_DEF01_DEF001 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF002 */
-#define SMONI_FUSA_FAULT_TRANSIENT (0x00000001U)   /* A transient fault is detected.       */
-/* Covers:  V3H_SM_DD_SMONI_DEF01_DEF002 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF003 */
-#define SMONI_FUSA_FAULT_PERMANENT (0x00000002U)   /* A permanent fault is detected.       */
-/* Covers:  V3H_SM_DD_SMONI_DEF01_DEF003 */
 
 /* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF004 */
 #define SMONI_FUSA_ERROR_TIMEOUT   (0x00000004U)   /* A timeout error occurred.            */
@@ -72,10 +64,6 @@ extern "C"
 #define SMONI_TIMEOUT_LOCK_PSCI_STATE_CTRL   1U
 /* Covers:  V3H_SM_DD_SMONI_DEF02_DEF002 */
 
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF014 */
-#define SMONI_TIMEOUT_LOCK_CFG_REG_CHECK     2U
-/* Covers:  V3H_SM_DD_SMONI_DEF02_DEF003 */
-
 /* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF015 */
 #define SMONI_TIMEOUT_LOCK_RTT_STATE_CTRL    3U
 /* Covers:  V3H_SM_DD_SMONI_DEF02_DEF004 */
@@ -85,11 +73,11 @@ extern "C"
 /* Covers:  V3H_SM_DD_SMONI_DEF02_DEF005 */
 
 /* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF017 */
-#define SMONI_TIMEOUT_SYNC_RTT_A2_FLUSH_L1   5U
+#define SMONI_TIMEOUT_SYNC_RTT_A2_SYNC_MAIN  5U
 /* Covers:  V3H_SM_DD_SMONI_DEF02_DEF006 */
 
 /* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF018 */
-#define SMONI_TIMEOUT_SYNC_RTT_A2_FLUSH_L2   6U
+#define SMONI_TIMEOUT_SYNC_RTT_A2_SYNC_SUB   6U
 /* Covers:  V3H_SM_DD_SMONI_DEF02_DEF007 */
 
 /* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF019 */
@@ -100,53 +88,9 @@ extern "C"
 #define SMONI_TIMEOUT_SYNC_RTT_A2_FINISH     8U
 /* Covers:  V3H_SM_DD_SMONI_DEF02_DEF009 */
 
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF021 */
-#define SMONI_CFG_REG_SETTING_CHECK_ONCE     0U
-/* Covers:  V3H_SM_DD_SMONI_DEF03_DEF001 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF022 */
-#define SMONI_CFG_REG_SETTING_CHECK_TWICE    1U
-/* Covers:  V3H_SM_DD_SMONI_DEF03_DEF002 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF023 */
-#define SMONI_CFG_REG_TARGET_CA53CPUCMCR     0U
-/* Covers:  V3H_SM_DD_SMONI_DEF04_DEF001 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF024 */
-#define SMONI_CFG_REG_TARGET_CA53DBGRCR      1U
-/* Covers:  V3H_SM_DD_SMONI_DEF04_DEF002 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF025 */
-#define SMONI_CFG_REG_TARGET_CNTCR           2U
-/* Covers:  V3H_SM_DD_SMONI_DEF04_DEF003 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF026 */
-#define SMONI_CFG_REG_TARGET_CNTFID0         3U
-/* Covers:  V3H_SM_DD_SMONI_DEF04_DEF004 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF027 */
-#define SMONI_CFG_REG_TARGET_WUPMSKCA53      4U
-/* Covers:  V3H_SM_DD_SMONI_DEF04_DEF005 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF028 */
-#define SMONI_CFG_REG_TARGET_CA53CPUNBAR     5U
-/* Covers:  V3H_SM_DD_SMONI_DEF04_DEF006 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF029 */
-#define SMONI_CFG_REG_TARGET_IGROUPR0        9U
-/* Covers:  V3H_SM_DD_SMONI_DEF04_DEF007 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF030 */
-#define SMONI_CFG_REG_TARGET_IGROUPRN       10U
-/* Covers:  V3H_SM_DD_SMONI_DEF04_DEF008 */
-
 /* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF031 */
 #define SMONI_SMC_ID_SET_TIMEOUT    0xC2000009U
 /* Covers: V3H_SM_DD_SMONI_DEF05_DEF008 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF032 */
-#define SMONI_SMC_ID_CFG_REG_CHK    0xC2000004U
-/* Covers: V3H_SM_DD_SMONI_DEF05_DEF007 */
 
 /* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF033 */
 #define SMONI_SMC_ID_RTT_LOCK_ACQ   0xC2000005U
@@ -175,11 +119,6 @@ extern "C"
 /* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF039 */
 #define SMONI_SMC_ID_SELF_CHK_EXEC  0xC200000AU
 /* Covers: V3H_SM_DD_SMONI_DEF05_DEF009 */
-
-/* Traceability ID: V3H_SM_CD_SMONIAPI_H01_DEF040 */
-#define SMONI_SMC32_ID_SET_TIMEOUT    0x82000009U
-/* Covers: V3H_SM_DD_SMONI_DEF05_DEF010 */
-
 
 #ifdef __cplusplus
 }

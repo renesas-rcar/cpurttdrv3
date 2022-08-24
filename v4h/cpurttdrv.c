@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.20
- * MODIFIED      : 2022.06.13
+ * MODIFIED      : 2022.08.23
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -22,6 +22,8 @@
  *                            Modify the setting of SGI issue register.
  *                 2022.05.13 Modify fbist interrupt proccess to support SMPS0, SMPO0 and PAP.
  *                 2022.06.13 Modify the wakeup method when CPU runtime test.
+ *                 2023.08.23 Support A2 runtime test.
+ *                            Remove processing related to ConfigRegCheck and HWA Execute.
  */
 /****************************************************************************/
 /*
@@ -70,7 +72,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.4.0"
+#define DRIVER_VERSION "0.5.0"
 
 /***********************************************************
  Macro definitions
@@ -192,10 +194,10 @@ static const phys_addr_t drvRTT_PhyRegAddr[DRV_RTTKER_HIERARCHY_MAX] = {
 };
 
 static const uint64_t drvCPURTTKER_WakeupReg[DRV_CPURTTKER_CPUNUM_MAX + DRV_CPURTTKER_CLUSTERNUM_MAX] = {
-    DRV_CPURTTKER_CPUNUM_CPU1,
+    DRV_CPURTTKER_CPUNUM_INVALID,
     DRV_CPURTTKER_CPUNUM_CPU0,
     DRV_CPURTTKER_CPUNUM_CPU1,
-    DRV_CPURTTKER_CPUNUM_CPU3,
+    DRV_CPURTTKER_CPUNUM_INVALID,
     DRV_CPURTTKER_CPUNUM_CPU2,
     DRV_CPURTTKER_CPUNUM_CPU3
 };
@@ -230,7 +232,6 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
 static long drvCPURTT_UDF_FbistInit(void);
 static long drvCPURTT_UDF_FbistDeInit(void);
 static long drvCPURTT_UDF_WaitCbNotice(drvCPURTT_CallbackInfo_t *aParam);
-static long drvCPURTT_UDF_HWAExecute(uint32_t aHierarchy, uint32_t aRttex);
 
 static int fbc_uio_share_clk_enable(struct fbc_uio_share_platform_data *pdata)
 {
@@ -386,9 +387,13 @@ static void FbistInterruptHandler(int irq, struct uio_info *uio_info)
                         FbistCbRes |= (uint64_t)1U << FbisthdrInfo[i].mHierarchy;
                         /* The process write WUP_REQ bit of PWRCTRLx register to 1 in order to wake up the core in A1 Runtime Test. */
                         CpuIndex = drvCPURTTKER_WakeupReg[FbisthdrInfo[i].mHierarchy - DRV_RTTKER_HIERARCHY_CA76D0];
-                        ReadData = readl(g_RegBasePwrctrlc[CpuIndex]);
-                        writel((ReadData | DRV_CPURTTKER_PWRCTRLC_WUP_BIT), g_RegBasePwrctrlc[CpuIndex]);
-                        asm volatile("dsb sy" );
+                        if ((uint32_t)DRV_CPURTTKER_CPUNUM_INVALID > CpuIndex)
+                        {
+                           /* The process write WUP_REQ bit of PWRCTRLx register to 1 in order to wake up the core in A1 Runtime Test. */
+                            ReadData = readl(g_RegBasePwrctrlc[CpuIndex]);
+                            writel((ReadData | DRV_CPURTTKER_PWRCTRLC_WUP_BIT), g_RegBasePwrctrlc[CpuIndex]);
+                            asm volatile("dsb sy" );
+                        }
                     }
                     else
                     {
@@ -830,7 +835,7 @@ int drvCPURTT_UDF_A2RuntimeThreadN(void *aArg)
                 InterruptFlag = arch_local_irq_save();
             }
 
-            g_A2SmoniResult[ClusterNum][CpuNum] = R_SMONI_API_RuntimeTestA2Execute(g_A2Param[ClusterNum][CpuNum].Rttex, g_A2Param[ClusterNum][CpuNum].Sgi);
+            g_A2SmoniResult[ClusterNum][CpuNum] = R_SMONI_API_RuntimeTestA2Execute(g_A2Param[ClusterNum][CpuNum].Rttex);
 
             /* On CPU0, restore interrupt mask. */
             if(CpuNum == (unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPU0)
@@ -949,7 +954,6 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
     drvCPURTT_A2rttParam_t SmoniArgA2;
     drvCPURTT_FbaWriteParam_t SmoniArgFwrite;
     drvCPURTT_FbaReadParam_t SmoniArgFread;
-    drvCPURTT_ConfigRegCheckParam_t SmoniArgCfg;
     drvCPURTT_SetTimeoutParam_t SmoniArgTimeout;
     drvCPURTT_SelfCheckParam_t SmoniArgSelf;
     unsigned int CpuCnt;
@@ -982,16 +986,6 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
             if (ret == 0)
             {
                 *aSmoniret = R_SMONI_API_SetTimeout(SmoniArgTimeout.Target, SmoniArgTimeout.MicroSec);
-            }
-            break;
-
-        case DRV_CPURTT_SMONIAPI_CFGREGCHECK:
-
-            /* Copy smoni api arguments to kernel memory. */
-            ret = copy_from_user(&SmoniArgCfg, (const void __user *)(aArg), sizeof(SmoniArgCfg));
-            if (ret == 0)
-            {
-                *aSmoniret = R_SMONI_API_ConfigurationRegisterCheck(SmoniArgCfg.Setting, SmoniArgCfg.TargetReg);
             }
             break;
 
@@ -1040,12 +1034,10 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
                 {
                     /* Set argument for A2 Runtime Test. */
                     g_A2Param[ClusterNum][DRV_CPURTTKER_CLUSTERNUM_CPU0].Rttex = SmoniArgA2.Rttex;
-                    g_A2Param[ClusterNum][DRV_CPURTTKER_CLUSTERNUM_CPU0].Sgi = SmoniArgA2.Sgi;
                     for(CpuCnt=(unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPU1; CpuCnt<(unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPUMAX; CpuCnt++)
                     {
                         /* Another CPU0, Argument is dummy data. */
                         g_A2Param[ClusterNum][CpuCnt].Rttex = DRV_RTTKER_A2_PARAM_RTTEX_DATA;
-                        g_A2Param[ClusterNum][CpuCnt].Sgi = DRV_RTTKER_A2_PARAM_SGI_DATA;
                     }
 
                     ret = drvCPURTT_SetInterruptCpu(aCpuId, DRV_CPURTTKER_TESTTYPE_A2);
@@ -1268,48 +1260,6 @@ static long drvCPURTT_UDF_WaitCbNotice(drvCPURTT_CallbackInfo_t *aParam)
     return ret;
 }
 
-static long drvCPURTT_UDF_HWAExecute(uint32_t aHierarchy, uint32_t aRttex)
-{
-    long      ret = 0;
-    struct platform_device *pdev = g_cpurtt_pdev;
-    struct fbc_uio_share_platform_data *priv = platform_get_drvdata(pdev);
-    struct uio_info *uio_info = priv->uio_info;
-    unsigned long flags;
-
-    /* check hierarhcy */
-    if ( ( (aHierarchy>=(uint32_t)DRV_RTTKER_HIERARCHY_ISP0) && (aHierarchy<=(uint32_t)DRV_RTTKER_HIERARCHY_SLIM1) ) ||
-         ( (aHierarchy>=(uint32_t)DRV_RTTKER_HIERARCHY_UMFL0) && (aHierarchy<(uint32_t)DRV_RTTKER_HIERARCHY_MAX ) )  )
-    {
-        /* Set interrupt disabled so that the field BIST finish interrupt does not occur immediately after writing the RTTEX register.  */
-        /* Check in advance if there is a process that disables interrupts before setting. */
-        spin_lock(&priv->lock);
-        if (!__test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
-        {
-            disable_irq((unsigned int)uio_info->irq);
-        }
-        spin_unlock(&priv->lock);
-
-        /* write RTTEX register for execute runtime test */
-        writel(aRttex, g_RegBaseAddrTable[aHierarchy]);
-        ret = 0;
-
-        /* If there is no other process that disables interrupts, set interrupt enable. */
-        spin_lock_irqsave(&priv->lock, flags);
-        if (__test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
-        {
-            enable_irq((unsigned int)uio_info->irq);
-        }
-        spin_unlock_irqrestore(&priv->lock, flags);
-    }
-    else
-    {
-        ret = -EINVAL;
-        pr_err("hierarchy number =%d fail\n", aHierarchy);
-    }
-
-    return ret;
-}
-
 /* This function executes the purttmod open system call.  */
 static int CpurttDrv_open(struct inode *inode, struct file *file)
 {
@@ -1328,7 +1278,6 @@ static long CpurttDrv_ioctl( struct file* filp, unsigned int cmd, unsigned long 
     long ret;
     drvCPURTT_CallbackInfo_t CbInfo;
     drvCPURTT_SmoniParam_t smoni_param;
-    drvCPURTT_HwaParam_t hwa_param;
 
     /* Executes the process corresponding to the command specified in the argument "cmd" passed by ioctl execution from the user layer. */
     switch (cmd) {
@@ -1387,19 +1336,6 @@ static long CpurttDrv_ioctl( struct file* filp, unsigned int cmd, unsigned long 
                {
                    ret = -EFAULT;
                }
-            }
-            break;
-
-        case DRV_CPURTT_IOCTL_HWAEXE:
-            /* Copy hwa execute arguments to kernel memory. */
-            ret = copy_from_user(&hwa_param, (void __user *)arg, sizeof(drvCPURTT_HwaParam_t));
-            if (ret != 0) {
-               ret = -EFAULT;
-            }
-
-            if (ret == 0)
-            {
-                ret = drvCPURTT_UDF_HWAExecute(hwa_param.Hierarchy, hwa_param.Rttex);
             }
             break;
 
