@@ -3,7 +3,7 @@
  *
  * DESCRIPTION   : The source code of Secure Monitor.
  * CREATED       : 2018.06.13
- * MODIFIED      : 2022.08.10
+ * MODIFIED      : 2022.12.14
  * TARGET OS     : OS agnostic.
  ******************************************************************************/
 
@@ -43,6 +43,10 @@
 #define SMONI_SMC_ID_SELF_CHK_EXEC_ASM  0xC200000A
 /* Covers: V3H_SM_DD_SMONI_DEF05_DEF019 */
 
+#define SMONI_SMC_ID_CALL_UDF1_ASM      0xC3000101
+
+#define SMONI_SMC_ID_CALL_UDF2_ASM      0xC3000104
+
 .global R_SMONI_API_SetTimeout
 .global R_SMONI_API_RuntimeTestLockAcquire
 .global R_SMONI_API_RuntimeTestLockRelease
@@ -51,6 +55,8 @@
 .global R_SMONI_API_RuntimeTestFbaRead
 .global R_SMONI_API_RuntimeTestFbaWrite
 .global R_SMONI_API_SelfCheckExecute
+.global R_SMONI_API_CallUDF1
+.global R_SMONI_API_CallUDF2
 
 /* Traceability ID: V3H_SM_CD_SMONIAPI_S01_FUNC001 */
 .type R_SMONI_API_SetTimeout, @function
@@ -329,3 +335,23 @@ R_SMONI_API_SelfCheckExecute:
   smc #0
   /* Covers: V3H_SM_DD_SMONIAPI_EX009_001 */
   ret
+
+.type R_SMONI_API_CallUDF1, @function
+R_SMONI_API_CallUDF1:
+  mov w3, w2
+  mov w2, w1
+  mov w1, w0
+  ldr w0, =SMONI_SMC_ID_CALL_UDF1_ASM
+  smc #0
+  ret
+
+.type R_SMONI_API_CallUDF2, @function
+R_SMONI_API_CallUDF2:
+  mov w3, w2
+  mov w2, w1
+  mov w1, w0
+  ldr w0, =SMONI_SMC_ID_CALL_UDF2_ASM
+  smc #0
+  ret
+
+

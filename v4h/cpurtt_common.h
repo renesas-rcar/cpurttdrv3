@@ -3,7 +3,7 @@
  * FILE          : cpurtt_common.h
  * DESCRIPTION   : CPU Runtime Test driver
  * CREATED       : 2021.02.15
- * MODIFIED      : 2022.08.23
+ * MODIFIED      : 2022.12.14
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -18,6 +18,7 @@
  *                 2022.04.08 Modify drvCPURTT_CallbackInfo_t.
  *                 2022.08.23 Support A2 runtime test.
  *                            Remove processing related to ConfigRegCheck and HWA Execute.
+ *                 2022.12.14 Add smoni UDF.
  */
 /****************************************************************************/
 /*
@@ -78,6 +79,12 @@ typedef struct {
     uint32_t TargetHierarchy;
 } drvCPURTT_SelfCheckParam_t;
 
+typedef struct {
+    uint32_t Arg1;
+    uint32_t Arg2;
+    uint32_t Arg3;
+} drvCPURTT_UdfParam_t;
+
 /* index for smoni api */
 typedef enum
 {
@@ -89,6 +96,8 @@ typedef enum
     DRV_CPURTT_SMONIAPI_FBAWRITE,
     DRV_CPURTT_SMONIAPI_FBAREAD,
     DRV_CPURTT_SMONIAPI_SELFCHECK,
+    DRV_CPURTT_SMONIAPI_UDF1,
+    DRV_CPURTT_SMONIAPI_UDF2,
     DRV_CPURTT_SMONIAPI_SMONITABLE_MAX
 } drvCPURTT_SmoniTable_t;
 

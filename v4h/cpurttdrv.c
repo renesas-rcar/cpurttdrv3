@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.20
- * MODIFIED      : 2022.08.23
+ * MODIFIED      : 2022.12.14
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -24,6 +24,7 @@
  *                 2022.06.13 Modify the wakeup method when CPU runtime test.
  *                 2023.08.23 Support A2 runtime test.
  *                            Remove processing related to ConfigRegCheck and HWA Execute.
+ *                 2022.12.14 Add smoni UDF.
  */
 /****************************************************************************/
 /*
@@ -72,7 +73,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.5.0"
+#define DRIVER_VERSION "0.6.0"
 
 /***********************************************************
  Macro definitions
@@ -224,6 +225,8 @@ static int CpurttDrv_close(struct inode *inode, struct file *file);
 static long CpurttDrv_ioctl(struct file* filp, unsigned int cmd, unsigned long arg );
 static int CpurttDrv_init(void);
 static void CpurttDrv_exit(void);
+
+int drvCPURTT_UDF_A2RuntimeThreadN(void *aArg);
 
 static long drvCPURTT_UDF_RuntimeTestInit(void);
 static long drvCPURTT_UDF_RuntimeTestDeinit(void);
@@ -956,6 +959,7 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
     drvCPURTT_FbaReadParam_t SmoniArgFread;
     drvCPURTT_SetTimeoutParam_t SmoniArgTimeout;
     drvCPURTT_SelfCheckParam_t SmoniArgSelf;
+    drvCPURTT_UdfParam_t SmoniArgUdf;
     unsigned int CpuCnt;
     unsigned int CpuNum;
     unsigned int ClusterNum;
@@ -1124,6 +1128,26 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
             if (ret == 0U)
             {
                 *aSmoniret = R_SMONI_API_SelfCheckExecute(SmoniArgSelf.Rttex, SmoniArgSelf.TargetHierarchy);
+            }
+            break;
+
+        case DRV_CPURTT_SMONIAPI_UDF1:
+
+            /* Copy smoni api arguments to kernel memory. */
+            ret = copy_from_user(&SmoniArgUdf, (const void __user *)(aArg), sizeof(drvCPURTT_UdfParam_t));
+            if (ret == 0U)
+            {
+                *aSmoniret = R_SMONI_API_CallUDF1(SmoniArgUdf.Arg1, SmoniArgUdf.Arg2, SmoniArgUdf.Arg3);
+            }
+            break;
+
+        case DRV_CPURTT_SMONIAPI_UDF2:
+
+            /* Copy smoni api arguments to kernel memory. */
+            ret = copy_from_user(&SmoniArgUdf, (const void __user *)(aArg), sizeof(drvCPURTT_UdfParam_t));
+            if (ret == 0U)
+            {
+                *aSmoniret = R_SMONI_API_CallUDF2(SmoniArgUdf.Arg1, SmoniArgUdf.Arg2, SmoniArgUdf.Arg3);
             }
             break;
 
