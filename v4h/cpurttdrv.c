@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.20
- * MODIFIED      : 2022.12.14
+ * MODIFIED      : 2024.10.10
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -25,10 +25,12 @@
  *                 2023.08.23 Support A2 runtime test.
  *                            Remove processing related to ConfigRegCheck and HWA Execute.
  *                 2022.12.14 Add smoni UDF.
+ *                 2024.10.10 Support V4H Variants.
+ *                            Add the execution used for checking CPU ID based on ProductID.
  */
 /****************************************************************************/
 /*
- * Copyright(C) 2021-2022 Renesas Electronics Corporation. All Rights Reserved.
+ * Copyright(C) 2021-2024 Renesas Electronics Corporation. All Rights Reserved.
  * RENESAS ELECTRONICS CONFIDENTIAL AND PROPRIETARY
  * This program must be used solely for the purpose for which
  * it was furnished by Renesas Electronics Corporation.
@@ -73,7 +75,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.6.0"
+#define DRIVER_VERSION "0.7.0"
 
 /***********************************************************
  Macro definitions
@@ -94,6 +96,12 @@
 /* Variables used for device registration of cpurttmod */
 static unsigned int cpurtt_major = 0;        /*  0:auto */
 static struct class *cpurtt_class = NULL;
+
+/* Variables used for checking CpuMap based on ProductID */
+static drvRTT_CpuCoreState_t g_CpuCoreMap[DRV_CPURTTKER_CLUSTERNUM_MAX][DRV_CPURTTKER_CLUSTERNUM_CPUMAX];
+
+/* Variable used for store the Prodyct ID */
+static drvCPURTT_ProductId_t g_ProductId = DRV_CPURTT_PRODUCT_V4H_7;
 
 /* Variables used unique to cpurttmod */
 static uint32_t g_SmoniAddrBuf[DRV_CPURTTKER_CPUNUM_MAX][DRV_CPURTTKER_SMONI_BUF_SIZE]; /* address buffer for parameter of R_SMONI_API_RuntimeTestFbaWrite/R_SMONI_API_RuntimeTestFbaRead */
@@ -203,12 +211,7 @@ static const uint64_t drvCPURTTKER_WakeupReg[DRV_CPURTTKER_CPUNUM_MAX + DRV_CPUR
     DRV_CPURTTKER_CPUNUM_CPU3
 };
 
-static const uint32_t drvCPURTTKER_InterruptCpuA1[DRV_CPURTTKER_CPUNUM_MAX] = {
-    DRV_CPURTTKER_CPUNUM_CPU1,      /* target interrupt cpu at CA760 */
-    DRV_CPURTTKER_CPUNUM_CPU0,      /* target interrupt cpu at CA761 */
-    DRV_CPURTTKER_CPUNUM_CPU3,      /* target interrupt cpu at CA762 */
-    DRV_CPURTTKER_CPUNUM_CPU2       /* target interrupt cpu at CA763 */
-};
+static uint32_t drvCPURTTKER_InterruptCpuA1[DRV_CPURTTKER_CPUNUM_MAX];
 static const uint32_t drvCPURTTKER_InterruptCpuA2[DRV_CPURTTKER_CLUSTERNUM_MAX] = {
     DRV_CPURTTKER_CPUNUM_CPU0,      /* target interrupt cpu at CA76D0 */
     DRV_CPURTTKER_CPUNUM_CPU2      /* target interrupt cpu at CA76D1 */
@@ -612,6 +615,116 @@ static struct platform_driver fbc_uio_share_driver = {
     }
 };
 
+/* Function used for identifying V4H variants and setting for CPU core */
+static uint32_t drvCPURTT_ProductInit(void)
+{
+    long ret = 0;
+    struct resource *Resource;
+    void __iomem *RegSoCType = NULL;
+    uint32_t RegSoCValue;
+    uint32_t ProductIdValue;
+
+    /* Cpu Core Map defined based on Product ID */
+    static const drvRTT_CpuCoreState_t drvCPURTT_V4H7CpuMap[DRV_CPURTTKER_CLUSTERNUM_MAX][DRV_CPURTTKER_CLUSTERNUM_CPUMAX] = {
+        {DRV_RTTKER_CPU_CORE_ENABLE, DRV_RTTKER_CPU_CORE_ENABLE},
+        {DRV_RTTKER_CPU_CORE_ENABLE, DRV_RTTKER_CPU_CORE_ENABLE}
+    };
+
+    static const drvRTT_CpuCoreState_t drvCPURTT_V4H5CpuMap[DRV_CPURTTKER_CLUSTERNUM_MAX][DRV_CPURTTKER_CLUSTERNUM_CPUMAX] = {
+        {DRV_RTTKER_CPU_CORE_ENABLE, DRV_RTTKER_CPU_CORE_ENABLE},
+        {DRV_RTTKER_CPU_CORE_ENABLE, DRV_RTTKER_CPU_CORE_ENABLE}
+    };
+
+    static const drvRTT_CpuCoreState_t drvCPURTT_V4H3CpuMap[DRV_CPURTTKER_CLUSTERNUM_MAX][DRV_CPURTTKER_CLUSTERNUM_CPUMAX] = {
+        {DRV_RTTKER_CPU_CORE_ENABLE, DRV_RTTKER_CPU_CORE_ENABLE},
+        {DRV_RTTKER_CPU_CORE_ENABLE, DRV_RTTKER_CPU_CORE_DISABLE}
+    };
+
+    static const uint32_t drvCPURTTKER_V4H7InterruptCpuA1[DRV_CPURTTKER_CPUNUM_MAX] = {
+        DRV_CPURTTKER_CPUNUM_CPU1,      /* target interrupt cpu at CA760 for V4H_7*/
+        DRV_CPURTTKER_CPUNUM_CPU0,      /* target interrupt cpu at CA761 for V4H_7*/
+        DRV_CPURTTKER_CPUNUM_CPU3,      /* target interrupt cpu at CA762 for V4H_7*/
+        DRV_CPURTTKER_CPUNUM_CPU2       /* target interrupt cpu at CA763 for V4H_7*/
+    };
+
+    static const uint32_t drvCPURTTKER_V4H5InterruptCpuA1[DRV_CPURTTKER_CPUNUM_MAX] = {
+        DRV_CPURTTKER_CPUNUM_CPU1,      /* target interrupt cpu at CA760 for V4H_5*/
+        DRV_CPURTTKER_CPUNUM_CPU0,      /* target interrupt cpu at CA761 for V4H_5*/
+        DRV_CPURTTKER_CPUNUM_CPU3,      /* target interrupt cpu at CA762 for V4H_5*/
+        DRV_CPURTTKER_CPUNUM_CPU2       /* target interrupt cpu at CA763 for V4H_5*/
+    };
+
+    static const uint32_t drvCPURTTKER_V4H3InterruptCpuA1[DRV_CPURTTKER_CPUNUM_MAX] = {
+        DRV_CPURTTKER_CPUNUM_CPU1,      /* target interrupt cpu at CA760 for V4H_3*/
+        DRV_CPURTTKER_CPUNUM_CPU0,      /* target interrupt cpu at CA761 for V4H_3*/
+        DRV_CPURTTKER_CPUNUM_CPU0,      /* target interrupt cpu at CA762 for V4H_3*/
+        DRV_CPURTTKER_CPUNUM_INVALID    /* target interrupt cpu at CA763 for V4H_3*/
+    };
+
+    /* get resource for regster address define variant ID */
+    Resource = request_mem_region(DRV_RTTKER_OTPMON17_ADDR, 4U, UDF_CPURTT_DRIVER_NAME);
+    if (NULL == Resource)
+    {
+        pr_err("failed to get OTPMONITOR17 resource\n");
+        ret = -ENOSPC;
+    }
+
+    if (0 == ret)
+    {
+        RegSoCType = ioremap(DRV_RTTKER_OTPMON17_ADDR, 4U);
+        if(NULL == RegSoCType)
+        {
+            release_mem_region(DRV_RTTKER_OTPMON17_ADDR, 4U);
+            pr_err("failed to get OTPMONITOR17 address\n");
+            ret = -EFAULT;
+        }
+    }
+
+    if (0 == ret)
+    {
+        /* get variant ID from low 8 bit */
+        RegSoCValue = readl(RegSoCType);
+        ProductIdValue = RegSoCValue & DRV_RTTKER_PRODUCTID_MASK;
+
+        switch (ProductIdValue)
+        {
+            case DRV_RTTKER_PRODUCT_V4H_7:
+                g_ProductId = DRV_CPURTT_PRODUCT_V4H_7;
+                (void)memcpy(g_CpuCoreMap, drvCPURTT_V4H7CpuMap, sizeof(drvCPURTT_V4H7CpuMap));
+                (void)memcpy(drvCPURTTKER_InterruptCpuA1, drvCPURTTKER_V4H7InterruptCpuA1, sizeof(drvCPURTTKER_V4H7InterruptCpuA1));
+                break;
+
+            case DRV_RTTKER_PRODUCT_V4H_5:
+                g_ProductId = DRV_CPURTT_PRODUCT_V4H_5;
+                (void)memcpy(g_CpuCoreMap, drvCPURTT_V4H5CpuMap, sizeof(drvCPURTT_V4H5CpuMap));
+                (void)memcpy(drvCPURTTKER_InterruptCpuA1, drvCPURTTKER_V4H5InterruptCpuA1, sizeof(drvCPURTTKER_V4H5InterruptCpuA1));
+                break;
+
+            case DRV_RTTKER_PRODUCT_V4H_3:
+                g_ProductId = DRV_CPURTT_PRODUCT_V4H_3;
+                (void)memcpy(g_CpuCoreMap, drvCPURTT_V4H3CpuMap, sizeof(drvCPURTT_V4H3CpuMap));
+                (void)memcpy(drvCPURTTKER_InterruptCpuA1, drvCPURTTKER_V4H3InterruptCpuA1, sizeof(drvCPURTTKER_V4H3InterruptCpuA1));
+                break;
+
+            default:
+                iounmap(RegSoCType);
+                release_mem_region(DRV_RTTKER_OTPMON17_ADDR, 4U);
+                pr_err("invalid value of ProductID %d \n", ProductIdValue);
+                ret = -ENODEV;
+                break;
+        }
+    }
+    
+    if (0 == ret)
+    {
+        /* rerealse regster address */
+        iounmap(RegSoCType);
+        release_mem_region(DRV_RTTKER_OTPMON17_ADDR, 4U);
+    }
+
+    return ret;
+}
+
 static long drvCPURTT_InitRegAddr(void)
 {
     int i;
@@ -695,22 +808,25 @@ static long drvCPURTT_InitRegAddr(void)
     {
         for (j = 0; j < (uint32_t) DRV_CPURTTKER_CLUSTERNUM_CPUMAX; j++)
         {
-            CpuIndex = (i * DRV_CPURTTKER_CLUSTERNUM_CPUMAX) + j;
-            if (NULL == g_RegBasePwrctrlc[CpuIndex])
+            if (DRV_RTTKER_CPU_CORE_ENABLE == g_CpuCoreMap[i][j])
             {
-                PwrctrlcBaseAddress = DRV_CPURTTKER_APMU_CORE_BASE + (i * DRV_CPURTTKER_CLUSTER_OFFSET) + (j * DRV_CPURTTKER_CLUSTER_CORE_OFFSET);
-                Resource = request_mem_region(PwrctrlcBaseAddress, 4U, UDF_CPURTT_DRIVER_NAME);
-                if (NULL == Resource)
+                CpuIndex = (i * DRV_CPURTTKER_CLUSTERNUM_CPUMAX) + j;
+                if (NULL == g_RegBasePwrctrlc[CpuIndex])
                 {
-                    pr_err("failed to get Pwrctrlc[%d] resource\n", CpuIndex);
-                    return -ENOSPC;
-                }
+                    PwrctrlcBaseAddress = DRV_CPURTTKER_APMU_CORE_BASE + (i * DRV_CPURTTKER_CLUSTER_OFFSET) + (j * DRV_CPURTTKER_CLUSTER_CORE_OFFSET);
+                    Resource = request_mem_region(PwrctrlcBaseAddress, 4U, UDF_CPURTT_DRIVER_NAME);
+                    if (NULL == Resource)
+                    {
+                        pr_err("failed to get Pwrctrlc[%d] resource\n", CpuIndex);
+                        return -ENOSPC;
+                    }
 
-                g_RegBasePwrctrlc[CpuIndex] = ioremap(PwrctrlcBaseAddress, 4U);
-                if(NULL == g_RegBasePwrctrlc[CpuIndex])
-                {
-                    pr_err("failed to get PwrctrlcBaseAddress[%d] address \n", CpuIndex);
-                    return -EFAULT;
+                    g_RegBasePwrctrlc[CpuIndex] = ioremap(PwrctrlcBaseAddress, 4U);
+                    if(NULL == g_RegBasePwrctrlc[CpuIndex])
+                    {
+                        pr_err("failed to get PwrctrlcBaseAddress[%d] address \n", CpuIndex);
+                        return -EFAULT;
+                    }
                 }
             }
         }
@@ -750,12 +866,15 @@ static void drvCPURTT_DeInitRegAddr(void)
     {
         for (j = 0; j < (uint32_t) DRV_CPURTTKER_CLUSTERNUM_CPUMAX; j++)
         {
-            CpuIndex = (i * DRV_CPURTTKER_CLUSTERNUM_CPUMAX) + j;
-            PwrctrlcBaseAddress = DRV_CPURTTKER_APMU_CORE_BASE + (i * DRV_CPURTTKER_CLUSTER_OFFSET) + (j * DRV_CPURTTKER_CLUSTER_CORE_OFFSET);
+            if (DRV_RTTKER_CPU_CORE_ENABLE == g_CpuCoreMap[i][j])
+            {
+                CpuIndex = (i * DRV_CPURTTKER_CLUSTERNUM_CPUMAX) + j;
+                PwrctrlcBaseAddress = DRV_CPURTTKER_APMU_CORE_BASE + (i * DRV_CPURTTKER_CLUSTER_OFFSET) + (j * DRV_CPURTTKER_CLUSTER_CORE_OFFSET);
 
-            iounmap(g_RegBasePwrctrlc[CpuIndex]);
-            release_mem_region(PwrctrlcBaseAddress, 4U);
-            g_RegBasePwrctrlc[CpuIndex] = NULL;
+                iounmap(g_RegBasePwrctrlc[CpuIndex]);
+                release_mem_region(PwrctrlcBaseAddress, 4U);
+                g_RegBasePwrctrlc[CpuIndex] = NULL;
+            }
         }
     }
 }
@@ -872,10 +991,18 @@ static long drvCPURTT_SetInterruptCpu(unsigned int aCpuId, drvRTT_testtype_t aRu
     switch (aRuntimeTestType)
     {
         case DRV_CPURTTKER_TESTTYPE_A1:
-            ret = (long)irq_set_affinity_hint(IrqNum, cpumask_of((unsigned int)drvCPURTTKER_InterruptCpuA1[aCpuId]));
-            if(ret < 0)
+            if (DRV_CPURTTKER_CPUNUM_INVALID != drvCPURTTKER_InterruptCpuA1[aCpuId])
             {
-                pr_err( "irq_set_affinity_hint failed %ld \n",ret);
+                ret = (long)irq_set_affinity_hint(IrqNum, cpumask_of((unsigned int)drvCPURTTKER_InterruptCpuA1[aCpuId]));
+                if(ret < 0)
+                {
+                    pr_err( "irq_set_affinity_hint failed %ld \n",ret);
+                }
+            }
+            else
+            {
+                ret = -EINVAL;
+                pr_err( "invalid aCpuId drvCPURTT_SetInterruptCpu failed %d \n",aCpuId);
             }
             break;
 
@@ -910,7 +1037,7 @@ static long drvCPURTT_UDF_RuntimeTestInit(void)
     {
         for(CpuIndex=0; CpuIndex<(unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPUMAX; CpuIndex++)
         {
-            if(g_A2Task[ClusterIndex][CpuIndex] == NULL)
+            if((NULL == g_A2Task[ClusterIndex][CpuIndex]) && (DRV_RTTKER_CPU_CORE_ENABLE == g_CpuCoreMap[ClusterIndex][CpuIndex]))
             {
                 init_completion(&g_A2EndSynCompletion[ClusterIndex][CpuIndex]);
                 init_completion(&g_A2ThWakeupCompletion[ClusterIndex][CpuIndex]);
@@ -961,18 +1088,26 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
     drvCPURTT_SelfCheckParam_t SmoniArgSelf;
     drvCPURTT_UdfParam_t SmoniArgUdf;
     unsigned int CpuCnt;
-    unsigned int CpuNum;
-    unsigned int ClusterNum;
+    unsigned int ClusterNum = aCpuId / (unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPUMAX;
+    unsigned int CpuNum = aCpuId % (unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPUMAX;
 
     if (!(0xFFFFFFF0 & aCpuId))
     {
-        cpumask_clear(&CpuMask); 
-        cpumask_set_cpu(aCpuId, &CpuMask); 
-        ret = sched_setaffinity(current->pid, &CpuMask);
-        if(ret < 0)
+        if (DRV_RTTKER_CPU_CORE_ENABLE == g_CpuCoreMap[ClusterNum][CpuNum])
         {
-            pr_err("sched_setaffinity fail %ld\n", ret);
-            return ret;
+            cpumask_clear(&CpuMask); 
+            cpumask_set_cpu(aCpuId, &CpuMask); 
+            ret = sched_setaffinity(current->pid, &CpuMask);
+            if(ret < 0)
+            {
+                pr_err("sched_setaffinity fail %ld\n", ret);
+                return ret;
+            }
+        }
+        else
+        {
+            pr_err("invalid affinity cpu number = %x\n", aCpuId);
+            return -EINVAL;
         }
     }
     else
@@ -1032,8 +1167,6 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
             ret = copy_from_user(&SmoniArgA2, (const void __user *)(aArg), sizeof(drvCPURTT_A2rttParam_t));
             if (ret == 0U)
             {
-                ClusterNum = aCpuId / (unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPUMAX;
-                CpuNum = aCpuId % (unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPUMAX;
                 if ((CpuNum == (unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPU0) && (ClusterNum < (unsigned int)DRV_CPURTTKER_CLUSTERNUM_MAX))
                 {
                     /* Set argument for A2 Runtime Test. */
@@ -1053,17 +1186,23 @@ static long drvCPURTT_UDF_SmoniApiExe(drvCPURTT_SmoniTable_t index, uint32_t aCp
                     /* A2 Runtime Test Execution thread start request  */
                     for(CpuCnt=(unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPU0; CpuCnt<(unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPUMAX; CpuCnt++)
                     {
-                        complete(&g_A2StartSynCompletion[ClusterNum]);
+                        if (DRV_RTTKER_CPU_CORE_ENABLE == g_CpuCoreMap[ClusterNum][CpuCnt])
+                        {
+                            complete(&g_A2StartSynCompletion[ClusterNum]);
+                        }
                     }
 
                     for (CpuCnt=(unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPU0; CpuCnt<(unsigned int)DRV_CPURTTKER_CLUSTERNUM_CPUMAX; CpuCnt++)
                     {
-                        /* Wait until A2 Runtime Test completion notification is received from the A2 Runtime Test execution thread all CPUs  */
-                        ret = wait_for_completion_interruptible(&g_A2EndSynCompletion[ClusterNum][CpuCnt]);
-                        if (ret != 0)
+                        if (DRV_RTTKER_CPU_CORE_ENABLE == g_CpuCoreMap[ClusterNum][CpuCnt])
                         {
-                            pr_err(" Cluster%d CPU%d wait completion error = %ld\n", ClusterNum, CpuCnt, ret);
-                            break;
+                            /* Wait until A2 Runtime Test completion notification is received from the A2 Runtime Test execution thread of active CPUs */
+                            ret = wait_for_completion_interruptible(&g_A2EndSynCompletion[ClusterNum][CpuCnt]);
+                            if (ret != 0)
+                            {
+                                pr_err(" Cluster%d CPU%d wait completion error = %ld\n", ClusterNum, CpuCnt, ret);
+                                break;
+                            }
                         }
                     }
 
@@ -1302,6 +1441,7 @@ static long CpurttDrv_ioctl( struct file* filp, unsigned int cmd, unsigned long 
     long ret;
     drvCPURTT_CallbackInfo_t CbInfo;
     drvCPURTT_SmoniParam_t smoni_param;
+    drvCPURTT_FbistInitParam_t fbistInit_param;
 
     /* Executes the process corresponding to the command specified in the argument "cmd" passed by ioctl execution from the user layer. */
     switch (cmd) {
@@ -1335,8 +1475,16 @@ static long CpurttDrv_ioctl( struct file* filp, unsigned int cmd, unsigned long 
             break;
 
         case DRV_CPURTT_IOCTL_DEVFBISTINIT:
+            fbistInit_param.ProductId = g_ProductId;
 
             ret = drvCPURTT_UDF_FbistInit();
+            if (ret == 0)
+            {
+                /* Copy the productID to user memory.  */
+                if (copy_to_user((void __user *)arg, &fbistInit_param, sizeof(drvCPURTT_FbistInitParam_t))) {
+                    ret = -EFAULT;
+                }
+            }
             break;
 
         case DRV_CPURTT_IOCTL_DEVFBISTDEINIT:
@@ -1436,14 +1584,20 @@ static int CpurttDrv_init(void)
     init_completion(&g_A2StartSynCompletion[DRV_CPURTTKER_CLUSTERNUM_1]);
     sema_init(&CallbackSem, 0);
 
-    for(ClusterIndex=0; ClusterIndex<DRV_CPURTTKER_CLUSTERNUM_MAX; ClusterIndex++)
+    /* identify V4H variants and setting for CPU core */
+    ret = drvCPURTT_ProductInit();
+
+    if (0 == ret)
     {
-        for(CpuIndex=0; CpuIndex<DRV_CPURTTKER_CLUSTERNUM_CPUMAX; CpuIndex++)
+        for(ClusterIndex=0; ClusterIndex<DRV_CPURTTKER_CLUSTERNUM_MAX; ClusterIndex++)
         {
-            g_A2Task[ClusterIndex][CpuIndex] = NULL;
+            for(CpuIndex=0; CpuIndex<DRV_CPURTTKER_CLUSTERNUM_CPUMAX; CpuIndex++)
+            {
+                g_A2Task[ClusterIndex][CpuIndex] = NULL;
+            }
         }
     }
-
+    
     return ret;
 }
 
