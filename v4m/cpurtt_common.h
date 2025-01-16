@@ -3,7 +3,7 @@
  * FILE          : cpurtt_common.h
  * DESCRIPTION   : CPU Runtime Test driver
  * CREATED       : 2021.02.15
- * MODIFIED      : 2022.12.14
+ * MODIFIED      : 2025.01.16
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4M
  * TARGET OS     : BareMetal
@@ -19,10 +19,11 @@
  *                 2022.08.23 Support A2 runtime test.
  *                            Remove processing related to ConfigRegCheck and HWA Execute.
  *                 2022.12.14 Add smoni UDF.
+ *                 2025.01.16 Modify ioctl command for drvCPURTT_UDF_FbistInitialize.
  */
 /****************************************************************************/
 /*
- * Copyright(C) 2021-2023 Renesas Electronics Corporation. All Rights Reserved.
+ * Copyright(C) 2021-2025 Renesas Electronics Corporation. All Rights Reserved.
  * RENESAS ELECTRONICS CONFIDENTIAL AND PROPRIETARY
  * This program must be used solely for the purpose for which
  * it was furnished by Renesas Electronics Corporation.
@@ -101,10 +102,22 @@ typedef enum
     DRV_CPURTT_SMONIAPI_SMONITABLE_MAX
 } drvCPURTT_SmoniTable_t;
 
+typedef enum
+{
+    DRV_CPURTT_PRODUCT_V4M_7 = 0,
+    DRV_CPURTT_PRODUCT_V4M_5,
+    DRV_CPURTT_PRODUCT_V4M_3,
+    DRV_CPURTT_PRODUCT_V4M_2,
+} drvCPURTT_ProductId_t;
+
 typedef struct {
     uint64_t FbistCbRequest;
     uint64_t RfsoOutputPinRequest;
 } drvCPURTT_CallbackInfo_t;
+
+typedef struct {
+    drvCPURTT_ProductId_t ProductId;
+} drvCPURTT_FbistInitParam_t;
 
 /* Command definition for ioctl */
 #define DRV_CPURTT_IOCTL_MAGIC  (0x9AU)
@@ -113,7 +126,7 @@ typedef struct {
 #define DRV_CPURTT_IOCTL_DEVINIT    _IO( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE )                                      /* ioctl command for drvCPURTT_UDF_DrvInitialize */
 #define DRV_CPURTT_IOCTL_DEVDEINIT  _IO( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 1 )                                  /* ioctl command for drvCPURTT_UDF_DrvDeInitialize */
 #define DRV_CPURTT_IOCTL_SMONI      _IOWR( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 2, drvCPURTT_SmoniParam_t )        /* ioctl command for drvCPURTT_UDF_SmoniApiExecute */
-#define DRV_CPURTT_IOCTL_DEVFBISTINIT    _IO( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 3 )                             /* ioctl command for drvCPURTT_UDF_FbistInitialize */
+#define DRV_CPURTT_IOCTL_DEVFBISTINIT    _IOR( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 3, drvCPURTT_FbistInitParam_t) /* ioctl command for drvCPURTT_UDF_FbistInitialize */
 #define DRV_CPURTT_IOCTL_DEVFBISTDEINIT  _IO( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 4 )                             /* ioctl command for drvCPURTT_UDF_FbistDeInitialize */
 #define DRV_CPURTT_IOCTL_WAIT_CALLBACK  _IOWR( DRV_CPURTT_IOCTL_MAGIC, DRV_CPURTT_CMD_CODE + 5 , drvCPURTT_CallbackInfo_t)  /* ioctl command for drvCPURTT_UDF_WaitCallback */
 

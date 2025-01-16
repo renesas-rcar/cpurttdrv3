@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.h
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.17
- * MODIFIED      : 2023.10.22
+ * MODIFIED      : 2025.01.16
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4M
  * TARGET OS     : BareMetal
@@ -17,10 +17,12 @@
  *                 2022.06.13 Modify the wakeup method when CPU runtime test.
  *                 2023.08.23 Support A2 runtime test.
  *                 2023.10.22 Modify for V4M.
+ *                 2025.01.16 Support V4M Variants
+ *                            Add definition, enum and struct type related to Product ID
  */
 /****************************************************************************/
 /*
- * Copyright(C) 2021-2023 Renesas Electronics Corporation. All Rights Reserved.
+ * Copyright(C) 2021-2025 Renesas Electronics Corporation. All Rights Reserved.
  * RENESAS ELECTRONICS CONFIDENTIAL AND PROPRIETARY
  * This program must be used solely for the purpose for which
  * it was furnished by Renesas Electronics Corporation.
@@ -39,6 +41,16 @@
 
 #define DRV_CPURTTKER_SMONI_BUF_SIZE 128U
 
+/* VARIANT ID REG */
+#define DRV_RTTKER_OTPMON17_ADDR 0xE61BF144U
+
+/* VARIANT ID */
+#define DRV_RTTKER_PRODUCT_V4M_7    0x00000000U 
+#define DRV_RTTKER_PRODUCT_V4M_5    0x00000001U
+#define DRV_RTTKER_PRODUCT_V4M_3    0x00000002U
+#define DRV_RTTKER_PRODUCT_V4M_2    0x00000004U
+
+#define DRV_RTTKER_PRODUCTID_MASK   0x000000FFU
 /* FieldBIST related defined values */
 /* RTTFINISH1 REG */
 #define DRV_RTTKER_RTTFINISH1   0xFF830100U
@@ -209,6 +221,13 @@ typedef enum
     DRV_CPURTTKER_TESTTYPE_A2,
     DRV_CPURTTKER_TESTTYPE_MAX
 } drvRTT_testtype_t;
+
+/* CPU CORE STATE */
+typedef enum
+{
+    DRV_RTTKER_CPU_CORE_ENABLE = 0,
+    DRV_RTTKER_CPU_CORE_DISABLE
+} drvRTT_CpuCoreState_t;
 
 typedef struct
 {
