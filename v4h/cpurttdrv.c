@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.20
- * MODIFIED      : 2024.10.10
+ * MODIFIED      : 2025.04.10
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -27,10 +27,11 @@
  *                 2022.12.14 Add smoni UDF.
  *                 2024.10.10 Support V4H Variants.
  *                            Add the execution used for checking CPU ID based on ProductID.
+ *                 2025.04.10 Support Region ID ON
  */
 /****************************************************************************/
 /*
- * Copyright(C) 2021-2024 Renesas Electronics Corporation. All Rights Reserved.
+ * Copyright(C) 2021-2025 Renesas Electronics Corporation. All Rights Reserved.
  * RENESAS ELECTRONICS CONFIDENTIAL AND PROPRIETARY
  * This program must be used solely for the purpose for which
  * it was furnished by Renesas Electronics Corporation.
@@ -75,7 +76,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.7.0"
+#define DRIVER_VERSION "0.8.0"
 
 /***********************************************************
  Macro definitions

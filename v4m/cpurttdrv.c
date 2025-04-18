@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.20
- * MODIFIED      : 2025.01.16
+ * MODIFIED      : 2025.04.10
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4M
  * TARGET OS     : BareMetal
@@ -28,6 +28,7 @@
  *                 2023.10.22 Modify for V4M.
  *                 2025.01.16 Support V4M Variants.
  *                            Add the execution used for checking CPU ID based on ProductID.
+ *                 2025.04.10 Support Region ID ON
  */
 /****************************************************************************/
 /*
@@ -76,7 +77,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.2.0"
+#define DRIVER_VERSION "0.3.0"
 
 /***********************************************************
  Macro definitions
@@ -706,7 +707,7 @@ static long drvCPURTT_InitRegAddr(void)
     struct resource *Resource;
     unsigned long PwrctrlcBaseAddress;
     int CpuIndex;
-    const unsigned int RegBasePwrctrlcTable[DRV_CPURTTKER_CLUSTERNUM_MAX][DRV_CPURTTKER_CLUSTERNUM_CPUMAX] =
+    const unsigned long RegBasePwrctrlcTable[DRV_CPURTTKER_CLUSTERNUM_MAX][DRV_CPURTTKER_CLUSTERNUM_CPUMAX] =
     {
         {
             DRV_CPURTTKER_APMU_CORE_BASE,
@@ -824,7 +825,7 @@ static void drvCPURTT_DeInitRegAddr(void)
     int j;
     unsigned long PwrctrlcBaseAddress;
     int CpuIndex;
-    const unsigned int RegBasePwrctrlcTable[DRV_CPURTTKER_CLUSTERNUM_MAX][DRV_CPURTTKER_CLUSTERNUM_CPUMAX] =
+    const unsigned long RegBasePwrctrlcTable[DRV_CPURTTKER_CLUSTERNUM_MAX][DRV_CPURTTKER_CLUSTERNUM_CPUMAX] =
     {
         {
             DRV_CPURTTKER_APMU_CORE_BASE,

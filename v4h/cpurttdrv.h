@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.h
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.17
- * MODIFIED      : 2024.10.10
+ * MODIFIED      : 2025.04.10
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -18,10 +18,11 @@
  *                 2023.08.23 Support A2 runtime test.
  *                 2024.10.10 Support V4H Variants
  *                            Add definition, enum and struct type related to Product ID
+ *                 2025.04.10 Support Region ID ON
  */
 /****************************************************************************/
 /*
- * Copyright(C) 2021-2024 Renesas Electronics Corporation. All Rights Reserved.
+ * Copyright(C) 2021-2025 Renesas Electronics Corporation. All Rights Reserved.
  * RENESAS ELECTRONICS CONFIDENTIAL AND PROPRIETARY
  * This program must be used solely for the purpose for which
  * it was furnished by Renesas Electronics Corporation.
@@ -39,9 +40,21 @@
 #define UDF_CPURTT_UIO_DRIVER_NAME    "fbc_uio_share"     /* cpurtt driver name for uio */
 
 #define DRV_CPURTTKER_SMONI_BUF_SIZE 128U
+/* Region ID configuration */
+#ifdef CONFIG_ENABLE_RGID
+/* Region 2 (Region ID ON) */
+#define DRV_RTTKER_OTPMEM_RGID 0x2ULL
+#define DRV_RTTKER_FBC_RGID    0x2ULL
+#define DRV_RTTKER_APMU_RGID   0x2ULL
+#else
+/* Region 0 (Region ID OFF/Default) */
+#define DRV_RTTKER_OTPMEM_RGID 0x0ULL
+#define DRV_RTTKER_FBC_RGID    0x0ULL
+#define DRV_RTTKER_APMU_RGID   0x0ULL
+#endif
 
 /* VARIANT ID REG */
-#define DRV_RTTKER_OTPMON17_ADDR 0xE61BF144U
+#define DRV_RTTKER_OTPMON17_ADDR  (0xE61BF144ULL | ((DRV_RTTKER_OTPMEM_RGID & 0xFULL) << 36ULL))
 
 /* VARIANT ID */
 #define DRV_RTTKER_PRODUCT_V4H_7    0x00000000U 
@@ -52,9 +65,9 @@
 
 /* FieldBIST related defined values */
 /* RTTFINISH1 REG */
-#define DRV_RTTKER_RTTFINISH1   0xFF830100U
-#define DRV_RTTKER_RTTFINISH2   0xFF830104U
-#define DRV_RTTKER_RTTFINISH3   0xFF830108U
+#define DRV_RTTKER_RTTFINISH1   (0xFF830100ULL | ((DRV_RTTKER_FBC_RGID & 0xFULL) << 36ULL))
+#define DRV_RTTKER_RTTFINISH2   (0xFF830104ULL | ((DRV_RTTKER_FBC_RGID & 0xFULL) << 36ULL))
+#define DRV_RTTKER_RTTFINISH3   (0xFF830108ULL | ((DRV_RTTKER_FBC_RGID & 0xFULL) << 36ULL))
 
 /* RTTEX REG */
 #define DRV_RTTKER_ISP0_RTTEX   0xFEAC1000U
@@ -92,6 +105,7 @@
 #define DRV_RTTKER_SMPS0_RTTEX  0xE7B64000U
 #define DRV_RTTKER_SMPO0_RTTEX  0xE7B63000U
 #define DRV_RTTKER_PAP_RTTEX    0xE7B62000U
+
 
 #define DRV_CPURTTKER_OFFSET_RTTEX 0x000U
 
@@ -153,7 +167,7 @@ typedef enum
 #define DRV_RTTKER_HIERARCHY_CPU   0U
 #define DRV_RTTKER_HIERARCHY_OTHER 1U
 
-#define DRV_CPURTTKER_APMU_CORE_BASE      0xE6170800U
+#define DRV_CPURTTKER_APMU_CORE_BASE      (0xE6170800ULL | ((DRV_RTTKER_APMU_RGID & 0xFULL) << 36ULL))
 #define DRV_CPURTTKER_CLUSTER_OFFSET           0x200U
 #define DRV_CPURTTKER_CLUSTER_CORE_OFFSET      0x040U
 #define DRV_CPURTTKER_PWRCTRLC_WUP_BIT    0x00000001U
