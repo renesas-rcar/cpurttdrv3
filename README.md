@@ -43,6 +43,7 @@ To specify the Region, user needs to modify the values of definitions described 
 | DRV_RTTKER_OTPMEM_RGID |Region ID to access to base address of OTP_MEM_1 registers|./cpurttdrv/{device_name}/cpurttdrv.h|device_name: v4h, v4m|
 | DRV_RTTKER_FBC_RGID    |Region ID to access to base address of FBC registers      |./cpurttdrv/{device_name}/cpurttdrv.h|device_name: v4h, v4m|
 | DRV_RTTKER_APMU_RGID   |Region ID to access to base address of APMU registers     |./cpurttdrv/{device_name}/cpurttdrv.h|device_name: v4h, v4m|
+| DRV_RTTKER_FBA_RGID    |Region ID to access to base address of FBA registers      |./cpurttdrv/{device_name}/cpurttdrv.h|device_name: v4h, v4m|
 
 **For example:**
 
@@ -52,4 +53,5 @@ To access to HW IP at Region 3, user should configure the RGID value as below:
 #define DRV_RTTKER_OTPMEM_RGID 0x3ULL
 #define DRV_RTTKER_FBC_RGID    0x3ULL
 #define DRV_RTTKER_APMU_RGID   0x3ULL
+#define DRV_RTTKER_FBA_RGID    0x3ULL
 ```
