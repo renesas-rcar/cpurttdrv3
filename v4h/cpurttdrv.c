@@ -3,7 +3,7 @@
  * FILE          : cpurttdrv.c
  * DESCRIPTION   : CPU Runtime Test driver for sample code
  * CREATED       : 2021.04.20
- * MODIFIED      : 2025.04.10
+ * MODIFIED      : 2025.06.27
  * AUTHOR        : Renesas Electronics Corporation
  * TARGET DEVICE : R-Car V4H
  * TARGET OS     : BareMetal
@@ -28,6 +28,7 @@
  *                 2024.10.10 Support V4H Variants.
  *                            Add the execution used for checking CPU ID based on ProductID.
  *                 2025.04.10 Support Region ID ON
+ *                 2025.06.27 Support Region ID ON (Update to mask Region ID value for FBA registers)
  */
 /****************************************************************************/
 /*
@@ -76,7 +77,7 @@
 
 #undef IS_INTERRUPT
 
-#define DRIVER_VERSION "0.8.0"
+#define DRIVER_VERSION "0.9.0"
 
 /***********************************************************
  Macro definitions
@@ -1640,4 +1641,5 @@ module_exit(CpurttDrv_exit);
 
 MODULE_AUTHOR("RenesasElectronicsCorp.");
 MODULE_DESCRIPTION("CPURTT drive");
+MODULE_VERSION(DRIVER_VERSION);
 MODULE_LICENSE("GPL v2");
